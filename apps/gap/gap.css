@@ -202,7 +202,13 @@ footer.site .wrap{height:auto;padding-top:18px;padding-bottom:18px;gap:16px;flex
 svg.i{width:16px;height:16px;vertical-align:-2px}
 .pill-src{font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;background:rgba(57,75,148,.1);color:var(--brand);margin-left:8px}
 
-/* questionnaire (refine) */
+/* questionnaire step (between scan and report) */
+.qstep{padding:64px 0 80px}
+.qstep .eyebrow{display:inline-flex;align-items:center;gap:6px;color:var(--ok);font-weight:600;margin:0 0 12px}
+.qtitle{font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800;letter-spacing:-.02em;margin:0 0 14px;line-height:1.1}
+.prov{background:color-mix(in srgb,var(--ok) 7%,#fff);border-bottom:1px solid var(--line)}
+.prov .wrap{display:flex;align-items:center;gap:8px;padding:12px 24px;font-size:13.5px;color:var(--soft)}
+/* shared question styles */
 .sec.refine{background:linear-gradient(180deg,color-mix(in srgb,var(--brand) 5%,#fff),#fff)}
 .qform{margin-top:26px;display:grid;gap:18px;max-width:820px}
 .q{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}

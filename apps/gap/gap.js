@@ -367,20 +367,41 @@
     </div></div>`;
   }
 
-  function refineHtml(m) {
-    if (m.refined) {
-      const up = m.score - m.scanScore;
-      return `<div class="sec alt"><div class="wrap"><div class="rdone">${ICON.check.replace('class="i"', 'class="i" style="color:var(--ok);width:22px;height:22px"')}
-        <div><b>Assessment refined with your answers.</b> <span class="muted">Readiness updated from <b style="color:var(--ink)">${m.scanScore}</b> (scan only) to <b style="color:var(--ink)">${m.score}</b>${up ? ` (${up > 0 ? "+" : ""}${up})` : ""}. The score, gaps and penalty below now reflect both your scan and your practices.</span></div></div></div></div>`;
-    }
+  // Standalone step shown AFTER the scan and BEFORE the assessment. The report is
+  // built from scan + answers together.
+  function questionnaireStep(data) {
+    $("#landing").hidden = true;
+    const r = $("#report"); r.hidden = false;
     const qs = QUESTIONS.map((qq, i) => `<div class="q"><p class="qq"><span class="qn">${i + 1}</span>${esc(qq.q)}</p>
       <div class="qopts">${qq.opts.map(o => `<label class="qopt"><input type="radio" name="q_${qq.id}" value="${esc(o[1])}"> <span>${esc(o[0])}</span></label>`).join("")}</div></div>`).join("");
-    return `<div class="sec refine"><div class="wrap">
-      <p class="kick">Refine your readiness</p><h2>${ICON.eye} Six questions your scan can't answer</h2>
-      <p class="intro">A scan sees your website, not your internal practices. Answer these and we fold your rights, breach, consent-records, retention, processor and scale posture into the score, gaps and penalty above.</p>
-      <form id="refine-form" class="qform">${qs}<p class="err" id="refine-err"></p>
-        <button class="btn" id="refine-btn" type="submit">Refine my score ${ICON.arrow}</button></form>
+    r.innerHTML = `<div class="qstep"><div class="wrap">
+      <p class="eyebrow">${ICON.check.replace('class="i"', 'class="i" style="color:var(--ok)"')} Scan complete for ${esc(data.domain || "your site")}</p>
+      <h1 class="qtitle">Six questions to complete your assessment</h1>
+      <p class="lead">Your scan captured what's visible. These answers, on things a scan can't see, complete your DPDP readiness, gaps and penalty exposure.</p>
+      <form id="qstep-form" class="qform">${qs}<p class="err" id="qstep-err"></p>
+        <button class="btn" id="qstep-btn" type="submit">See my assessment ${ICON.arrow}</button></form>
     </div></div>`;
+    window.scrollTo({ top: 0 });
+    $("#qstep-form").addEventListener("submit", e => {
+      e.preventDefault();
+      const answers = readAnswers(e.target, "#qstep-err");
+      if (answers) renderReport(buildModel(data, answers));
+    });
+  }
+  function readAnswers(form, errSel) {
+    const answers = {};
+    for (const qq of QUESTIONS) {
+      const sel = form.querySelector(`input[name="q_${qq.id}"]:checked`);
+      if (!sel) { const e = $(errSel); if (e) e.textContent = "Please answer all six questions."; return null; }
+      answers[qq.id] = qq.cat === "scale" ? sel.value : +sel.value;
+    }
+    return answers;
+  }
+
+  // A slim line under the hero recording that the assessment used scan + answers.
+  function provenanceHtml(m) {
+    if (!m.refined) return "";
+    return `<div class="prov"><div class="wrap">${ICON.check.replace('class="i"', 'class="i" style="color:var(--ok)"')} This assessment combines a live browser scan of <b>${esc(m.domain)}</b> with your ${QUESTIONS.length} answers. Scan-only readiness was ${m.scanScore}; with your answers it is ${m.score}.</div></div>`;
   }
 
   let lastModel = null, gated = true;
@@ -388,24 +409,10 @@
     lastModel = m;
     $("#landing").hidden = true;
     const r = $("#report"); r.hidden = false;
-    r.innerHTML = heroHtml(m) + foundHtml(m) + refineHtml(m) + consentHtml(m) + dataHtml(m) + piiHtml(m) + noticeSecHtml(m) + obligationsHtml(m) + gapsHtml(m, gated) + penaltyHtml(m) + ctaHtml(m);
+    r.innerHTML = heroHtml(m) + provenanceHtml(m) + foundHtml(m) + consentHtml(m) + dataHtml(m) + piiHtml(m) + noticeSecHtml(m) + obligationsHtml(m) + gapsHtml(m, gated) + penaltyHtml(m) + ctaHtml(m);
     window.scrollTo({ top: 0 });
     animate(m);
     wireUnlock();
-    wireRefine();
-  }
-  function wireRefine() {
-    const f = $("#refine-form"); if (!f) return;
-    f.addEventListener("submit", e => {
-      e.preventDefault();
-      const answers = {};
-      for (const qq of QUESTIONS) {
-        const sel = f.querySelector(`input[name="q_${qq.id}"]:checked`);
-        if (!sel) { $("#refine-err").textContent = "Please answer all six questions."; return; }
-        answers[qq.id] = qq.cat === "scale" ? sel.value : +sel.value;
-      }
-      renderReport(buildModel(lastModel.raw, answers));
-    });
   }
   function animate(m) {
     // gauge, set the final value first so it's correct even if rAF is throttled (background tab)
@@ -445,10 +452,11 @@
       const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: "" }) });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || "The assessment didn't finish. Try again.");
-      gated = true; renderReport(buildModel(data));
+      gated = true; questionnaireStep(data);                // scan done -> ask the 6 questions -> then the report
     } catch (err) { $("#scan-err").textContent = err.message; }
     finally { clearInterval(tick); $("#scan-btn").disabled = false; $("#scanning").hidden = true; }
   });
-  $("#sample").onclick = () => { gated = true; renderReport(buildModel(window.__SAMPLE__)); };
+  // Sample skips the questions and shows a fully-built example report (scan + typical answers).
+  $("#sample").onclick = () => { gated = true; renderReport(buildModel(window.__SAMPLE__, window.__SAMPLE_ANSWERS__ || null)); };
   const nd = $("#nav-demo"); if (nd) nd.href = SITE.bookDemoUrl || "#";
 })();

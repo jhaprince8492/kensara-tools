@@ -62,3 +62,6 @@ window.__SAMPLE__ = {
   https: true, hasPrivacyPolicy: true, hasConsentBanner: true, consentGating: false, hasDpoNamed: false, hasGrievanceContact: false, hasRightsPage: true,
   findings: [], errors: []
 };
+// Typical answers baked into the sample so "View a sample report" shows the full,
+// scan+questionnaire assessment without making the visitor fill the form.
+window.__SAMPLE_ANSWERS__ = { rights: 52, breach: 48, consentRecords: 50, retention: 48, processors: 50, scale: "1Lto10L" };
