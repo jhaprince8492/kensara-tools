@@ -150,22 +150,69 @@
     };
   }
 
-  function buildModel(d) {
-    const cats = deriveCategories(d);
+  // Six things a scan can't see. Each answer refines a DPDP obligation the browser
+  // can't observe. Scale drives Significant-Data-Fiduciary likelihood + penalty size.
+  const QUESTIONS = [
+    { id: "rights", cat: "rights", label: "Data-principal rights (DSAR)",
+      q: "Can people request access, correction, erasure or nomination of their personal data, and do you act on it within a set timeline?",
+      opts: [["Yes, a working process", 90], ["Informally, by email only", 52], ["No", 18]] },
+    { id: "breach", cat: "breach", label: "Breach response",
+      q: "Do you have a documented process to detect, contain and report a personal-data breach to the Board and affected people?",
+      opts: [["Yes, documented", 86], ["Informal only", 48], ["No", 18]] },
+    { id: "consentRecords", cat: "consentRecords", label: "Consent records",
+      q: "Do you keep a record of each person's consent, what they agreed to and when, that you can produce on demand?",
+      opts: [["Yes, logged and retrievable", 88], ["Partially", 50], ["No", 20]] },
+    { id: "retention", cat: "retention", label: "Retention and erasure",
+      q: "Do you delete personal data once its purpose is served, on a defined retention schedule?",
+      opts: [["Yes, scheduled deletion", 85], ["Ad-hoc", 48], ["No, kept indefinitely", 20]] },
+    { id: "processors", cat: "vendorGovernance", label: "Processor contracts",
+      q: "Do you have written data-processing agreements with every vendor that handles your users' personal data?",
+      opts: [["Yes, with all", 85], ["With some", 50], ["No", 22]] },
+    { id: "scale", cat: "scale", label: "Data volume",
+      q: "Roughly how many individuals' personal data does your company process?",
+      opts: [["Under 10,000", "lt10k"], ["10,000 to 1 lakh", "10kto1L"], ["1 lakh to 10 lakh", "1Lto10L"], ["Over 10 lakh", "gt10L"]] },
+  ];
+  const CAT_LABELS = { rights: "Data-principal rights", breach: "Breach readiness", consentRecords: "Consent records", retention: "Data retention", vendorGovernance: "Processor governance" };
+  const WEIGHTS = { consent: 1.4, notice: 1.2, security: 1.1, rights: 1.0, crossBorder: 0.9, children: 0.8, governance: 1.0, vendorGovernance: 0.9, retention: 0.9, breach: 1.0, consentRecords: 1.0 };
+  const weighted = cats => { let s = 0, w = 0; cats.forEach(c => { const wt = WEIGHTS[c.key] ?? 1; s += c.score * wt; w += wt; }); return clamp(w ? s / w : 0); };
+
+  // Fold self-reported answers into the scan-derived categories.
+  function mergeAnswers(cats, answers) {
+    if (!answers) return cats;
+    const out = cats.map(c => ({ ...c }));
+    const setCat = (key, score, finding) => { const c = out.find(x => x.key === key); if (c) { c.score = clamp(score); c.status = catStatus(c.score); if (finding) c.finding = finding; } };
+    if (answers.rights != null) setCat("rights", answers.rights, answers.rights >= 80 ? "You confirmed a working rights/DSAR process." : answers.rights >= 45 ? "Rights requests are handled only informally." : "No process to fulfil access/correction/erasure/nomination.");
+    if (answers.breach != null) setCat("breach", answers.breach, answers.breach >= 80 ? "You confirmed a documented breach-response process." : answers.breach >= 45 ? "Breach response is informal only." : "No breach detection or notification process.");
+    if (answers.retention != null) setCat("retention", answers.retention, answers.retention >= 80 ? "You confirmed a defined retention/erasure schedule." : answers.retention >= 45 ? "Retention is handled ad-hoc." : "Personal data is kept with no retention limit.");
+    if (answers.processors != null) setCat("vendorGovernance", answers.processors, answers.processors >= 80 ? "You confirmed processing agreements with all vendors." : answers.processors >= 45 ? "Only some processors are under contract." : "No data-processing agreements with vendors.");
+    if (answers.consentRecords != null && !out.find(x => x.key === "consentRecords")) {
+      out.push({ key: "consentRecords", label: "Consent records", score: clamp(answers.consentRecords), status: catStatus(answers.consentRecords),
+        finding: answers.consentRecords >= 80 ? "You keep retrievable consent records." : answers.consentRecords >= 45 ? "Consent records are only partial." : "No retrievable record of consent is kept." });
+    }
+    return out;
+  }
+
+  function buildModel(d, answers) {
+    let cats = deriveCategories(d);
+    const scanScore = weighted(cats);
+    cats = mergeAnswers(cats, answers);
     const scoreByKey = {}; cats.forEach(c => scoreByKey[c.key] = c.score); scoreByKey.automatedDecisions = 70;
+    if (answers && answers.consentRecords != null) scoreByKey.consent = Math.round(0.6 * (scoreByKey.consent ?? 60) + 0.4 * answers.consentRecords);
     const dc = d.dataCollection || {};
-    const sdfLikely = (dc.sensitiveCategories || []).length > 0 || (d.piiVendorCount || 0) >= 6 || /fintech|healthcare/.test((d.scoreDetail && d.scoreDetail.sector) || "");
-    const penalty = computePenalty(scoreByKey, { childrenApplicable: !!dc.collectsChildAge, sdfApplicable: sdfLikely, scale: "10kto1L" });
+    const scale = (answers && answers.scale) || "10kto1L";
+    const sdfLikely = (answers && (answers.scale === "1Lto10L" || answers.scale === "gt10L")) || (dc.sensitiveCategories || []).length > 0 || (d.piiVendorCount || 0) >= 6 || /fintech|healthcare/.test((d.scoreDetail && d.scoreDetail.sector) || "");
+    const penalty = computePenalty(scoreByKey, { childrenApplicable: !!dc.collectsChildAge, sdfApplicable: sdfLikely, scale });
     const days = Math.max(0, Math.ceil((DEADLINE - new Date()) / 86400000));
-    const score = typeof d.score === "number" ? d.score : (d.scoreDetail ? d.scoreDetail.score : 50);
+    const score = answers ? weighted(cats) : scanScore;
     const band = bandForScore(score);
     const worst = cats.filter(c => c.score < 70 && SERVICE[c.key]).sort((a, b) => a.score - b.score).slice(0, 3);
     const priorityGaps = worst.map(c => ({ ...SERVICE[c.key], severity: c.score < 35 ? "Critical" : c.score < 55 ? "High" : "Medium", impact: c.finding }));
     const urgency = band === "Strong" ? "You're ahead of most, lock in readiness before enforcement begins." : band === "Developing" ? "You have foundations, but the gaps below carry real exposure before enforcement." : "These gaps are the kind the Board acts on first. Closing them now is far cheaper than a penalty.";
     return {
-      domain: d.domain, generatedAt: d.scannedAt || new Date().toISOString(), score, band, sector: (d.scoreDetail && d.scoreDetail.sector) || "general",
+      domain: d.domain, generatedAt: d.scannedAt || new Date().toISOString(), score, scanScore, refined: !!answers, answers: answers || null,
+      band, sector: (d.scoreDetail && d.scoreDetail.sector) || "general",
       benchmark: d.scoreDetail && d.scoreDetail.benchmark, vsBenchmark: d.scoreDetail && d.scoreDetail.vsBenchmark,
-      sdfLikely, daysToDeadline: days, urgencyLine: urgency, consent: d.consent || {}, incomplete: d.incomplete,
+      sdfLikely, scale, daysToDeadline: days, urgencyLine: urgency, consent: d.consent || {}, incomplete: d.incomplete,
       categories: cats, priorityGaps, penalty, evidence: deriveEvidence(d), findings: deriveFindings(d), raw: d,
     };
   }
@@ -320,15 +367,45 @@
     </div></div>`;
   }
 
+  function refineHtml(m) {
+    if (m.refined) {
+      const up = m.score - m.scanScore;
+      return `<div class="sec alt"><div class="wrap"><div class="rdone">${ICON.check.replace('class="i"', 'class="i" style="color:var(--ok);width:22px;height:22px"')}
+        <div><b>Assessment refined with your answers.</b> <span class="muted">Readiness updated from <b style="color:var(--ink)">${m.scanScore}</b> (scan only) to <b style="color:var(--ink)">${m.score}</b>${up ? ` (${up > 0 ? "+" : ""}${up})` : ""}. The score, gaps and penalty below now reflect both your scan and your practices.</span></div></div></div></div>`;
+    }
+    const qs = QUESTIONS.map((qq, i) => `<div class="q"><p class="qq"><span class="qn">${i + 1}</span>${esc(qq.q)}</p>
+      <div class="qopts">${qq.opts.map(o => `<label class="qopt"><input type="radio" name="q_${qq.id}" value="${esc(o[1])}"> <span>${esc(o[0])}</span></label>`).join("")}</div></div>`).join("");
+    return `<div class="sec refine"><div class="wrap">
+      <p class="kick">Refine your readiness</p><h2>${ICON.eye} Six questions your scan can't answer</h2>
+      <p class="intro">A scan sees your website, not your internal practices. Answer these and we fold your rights, breach, consent-records, retention, processor and scale posture into the score, gaps and penalty above.</p>
+      <form id="refine-form" class="qform">${qs}<p class="err" id="refine-err"></p>
+        <button class="btn" id="refine-btn" type="submit">Refine my score ${ICON.arrow}</button></form>
+    </div></div>`;
+  }
+
   let lastModel = null, gated = true;
   function renderReport(m) {
     lastModel = m;
     $("#landing").hidden = true;
     const r = $("#report"); r.hidden = false;
-    r.innerHTML = heroHtml(m) + foundHtml(m) + consentHtml(m) + dataHtml(m) + piiHtml(m) + noticeSecHtml(m) + obligationsHtml(m) + gapsHtml(m, gated) + penaltyHtml(m) + ctaHtml(m);
+    r.innerHTML = heroHtml(m) + foundHtml(m) + refineHtml(m) + consentHtml(m) + dataHtml(m) + piiHtml(m) + noticeSecHtml(m) + obligationsHtml(m) + gapsHtml(m, gated) + penaltyHtml(m) + ctaHtml(m);
     window.scrollTo({ top: 0 });
     animate(m);
     wireUnlock();
+    wireRefine();
+  }
+  function wireRefine() {
+    const f = $("#refine-form"); if (!f) return;
+    f.addEventListener("submit", e => {
+      e.preventDefault();
+      const answers = {};
+      for (const qq of QUESTIONS) {
+        const sel = f.querySelector(`input[name="q_${qq.id}"]:checked`);
+        if (!sel) { $("#refine-err").textContent = "Please answer all six questions."; return; }
+        answers[qq.id] = qq.cat === "scale" ? sel.value : +sel.value;
+      }
+      renderReport(buildModel(lastModel.raw, answers));
+    });
   }
   function animate(m) {
     // gauge, set the final value first so it's correct even if rAF is throttled (background tab)
@@ -336,7 +413,8 @@
     if (num) num.textContent = m.score;
     if (ring) ring.style.strokeDashoffset = C - (m.score / 100) * C;
     const t0 = performance.now(), dur = 1100;
-    (function step(now) { const t = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - t, 3); const v = Math.round(e * m.score); if (num) num.textContent = v; if (ring) ring.style.strokeDashoffset = C - (v / 100) * C; if (t < 1) requestAnimationFrame(step); })(t0);
+    function step(now) { const t = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - t, 3); const v = Math.round(e * m.score); if (num) num.textContent = v; if (ring) ring.style.strokeDashoffset = C - (v / 100) * C; if (t < 1) requestAnimationFrame(step); }
+    requestAnimationFrame(step); // rAF only (no synchronous 0), so background tabs keep the final value
     setTimeout(() => document.querySelectorAll(".cat .bar > i[data-w]").forEach(i => i.style.width = i.getAttribute("data-w") + "%"), 60);
   }
   function wireUnlock() {
