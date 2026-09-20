@@ -16,6 +16,7 @@ const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET || "";
 const DEV = process.env.ALLOW_INSECURE === "1";
 const TEST_PAGE = path.join(__dirname, "test-frontend", "index.html");
 const CONSENT_DIR = path.join(__dirname, "..", "apps", "consent");   // consent frontend, served at /consent/
+const GAP_DIR = path.join(__dirname, "..", "apps", "gap");           // gap-assessment frontend, served at /gap/
 const LEAD_WEBHOOK_URL = process.env.LEAD_WEBHOOK_URL || "";
 const LEAD_NOTICE_VERSION = process.env.LEAD_NOTICE_VERSION || "2026-09";
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".jpg": "image/jpeg", ".webmanifest": "application/manifest+json" };
@@ -132,11 +133,16 @@ http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") { res.writeHead(204, corsHeaders(origin)); return res.end(); }
   if (req.method === "GET" && req.url === "/health") return send(res, 200, { ok: true, running, waiting: waiting.length, dev: DEV }, origin);
 
-  // Consent frontend, served at /consent/ (same origin as the API).
-  if (req.method === "GET" && (req.url === "/consent" )) { res.writeHead(301, { location: "/consent/" }); return res.end(); }
+  // Frontends, served at /consent/ and /gap/ (same origin as the API).
+  if (req.method === "GET" && req.url === "/consent") { res.writeHead(301, { location: "/consent/" }); return res.end(); }
   if (req.method === "GET" && req.url.startsWith("/consent/")) {
     const rel = req.url.slice("/consent/".length) || "index.html";
     return serveStatic(res, CONSENT_DIR, rel === "" ? "index.html" : rel);
+  }
+  if (req.method === "GET" && req.url === "/gap") { res.writeHead(301, { location: "/gap/" }); return res.end(); }
+  if (req.method === "GET" && req.url.startsWith("/gap/")) {
+    const rel = req.url.slice("/gap/".length) || "index.html";
+    return serveStatic(res, GAP_DIR, rel === "" ? "index.html" : rel);
   }
   // DEV ONLY: throwaway test UI at "/".
   if (DEV && req.method === "GET" && (req.url === "/" || req.url === "/index.html" || req.url === "/test")) {

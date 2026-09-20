@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free DPDP Act gap assessment | Kensara</title>
+<meta name="description" content="Deep-scan your website for DPDP Act 2023 gaps: pre-consent tracking, personal-data surface, privacy-notice completeness, cross-border transfers and penalty exposure.">
+<link rel="stylesheet" href="gap.css">
+<script src="site-config.js"></script>
+<script src="sample.js"></script>
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="logo" href="https://www.kensara.in">Kensara <span>Gap Assessment</span></a>
+  <nav><a class="btn ghost small" id="nav-demo" href="#">Book a demo</a></nav>
+</div></header>
+
+<main>
+  <!-- Landing -->
+  <section id="landing" class="landing">
+    <div class="wrap">
+      <p class="eyebrow">Free deep scan · Digital Personal Data Protection Act, 2023</p>
+      <h1>How ready is your website<br>for the DPDP Act?</h1>
+      <p class="lead">We run a real browser over your site the way a regulator or a data principal would: what tracks before consent, what personal data you collect, whether your banner actually blocks anything, how complete your notice is, and your likely penalty exposure.</p>
+      <form class="scanbox" id="scan-form">
+        <label class="sr" for="url">Website address</label>
+        <input id="url" name="url" type="text" inputmode="url" placeholder="yourcompany.in" autocomplete="url" required>
+        <button class="btn" id="scan-btn" type="submit">Assess my website</button>
+      </form>
+      <div id="turnstile" class="turnstile"></div>
+      <div id="scanning" class="scanning" hidden><span class="spin" aria-hidden="true"></span><span id="scan-msg">Opening your homepage…</span></div>
+      <p class="err" id="scan-err" role="alert"></p>
+      <p class="muted">Want to see it first? <button class="linkbtn" id="sample">View a sample report</button></p>
+      <ul class="how">
+        <li><b>Deep browser scan.</b> A real Chromium visit — pre-consent cookies, trackers, storage and every third-party contacted.</li>
+        <li><b>Consent, proven.</b> We click your own Accept and Reject to test whether the banner truly gates trackers.</li>
+        <li><b>Techno-legal read-out.</b> Personal-data surface, notice completeness, cross-border flows and DPDP penalty exposure.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Report (filled by gap.js) -->
+  <section id="report" hidden></section>
+</main>
+
+<footer class="site"><div class="wrap">
+  <span>© Kensara</span>
+  <span class="muted">Indicative deep scan of public pages. Not legal advice.</span>
+</div></footer>
+
+<script src="gap.js"></script>
+</body>
+</html>
