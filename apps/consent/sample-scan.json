@@ -1,0 +1,37 @@
+{
+  "sample": true,
+  "url": "https://sample-store.example/",
+  "domain": "sample-store.example",
+  "pagesVisited": ["https://sample-store.example/", "https://sample-store.example/shop", "https://sample-store.example/about", "https://sample-store.example/contact"],
+  "cookies": [
+    {"name": "PHPSESSID", "domain": "sample-store.example", "firstParty": true, "duration": "Session", "vendor": "Website (session)", "category": "necessary", "purpose": "Keeps you signed in and your session working"},
+    {"name": "woocommerce_cart_hash", "domain": "sample-store.example", "firstParty": true, "duration": "Session", "vendor": "WooCommerce", "category": "necessary", "purpose": "Shopping cart"},
+    {"name": "_ga", "domain": "sample-store.example", "firstParty": true, "duration": "2 years", "vendor": "Google Analytics", "category": "analytics", "purpose": "Counts visits and how the site is used"},
+    {"name": "_ga_8XK2LQ4Z1M", "domain": "sample-store.example", "firstParty": true, "duration": "2 years", "vendor": "Google Analytics", "category": "analytics", "purpose": "Counts visits and how the site is used"},
+    {"name": "_clck", "domain": "sample-store.example", "firstParty": true, "duration": "12 months", "vendor": "Microsoft Clarity", "category": "analytics", "purpose": "Heatmaps and session recordings"},
+    {"name": "_fbp", "domain": "sample-store.example", "firstParty": true, "duration": "3 months", "vendor": "Meta (Facebook)", "category": "marketing", "purpose": "Ad targeting and conversion tracking"},
+    {"name": "_gcl_au", "domain": "sample-store.example", "firstParty": true, "duration": "3 months", "vendor": "Google Ads / DoubleClick", "category": "marketing", "purpose": "Ad targeting and conversion measurement"},
+    {"name": "tawk_uuid_0", "domain": "sample-store.example", "firstParty": true, "duration": "6 months", "vendor": "Tawk.to", "category": "functional", "purpose": "Live chat widget"},
+    {"name": "visitor_uid", "domain": "sample-store.example", "firstParty": true, "duration": "1 year", "vendor": "Unknown", "category": "unclassified", "suggested": "analytics", "purpose": "This stores a unique ID for your browser, usually to recognise repeat visitors. That is normally analytics, but some advertising tools do the same - please confirm which applies."}
+  ],
+  "site": {"orgName": "Sample Store", "privacyUrl": "https://sample-store.example/privacy", "email": "grievance@sample-store.example", "phone": "+91 80 1234 5678"},
+  "storage": [
+    {"area": "localStorage", "key": "_hjSessionUser_2931", "vendor": "Hotjar", "category": "analytics", "purpose": "Heatmaps and session recordings"},
+    {"area": "localStorage", "key": "twk_token", "vendor": "Tawk.to", "category": "functional", "purpose": "Live chat"}
+  ],
+  "thirdParties": [
+    {"host": "www.googletagmanager.com", "requests": 6, "vendor": "Google Tag Manager", "category": "analytics"},
+    {"host": "region1.google-analytics.com", "requests": 4, "vendor": "Google Analytics", "category": "analytics"},
+    {"host": "connect.facebook.net", "requests": 3, "vendor": "Meta (Facebook)", "category": "marketing"},
+    {"host": "www.clarity.ms", "requests": 3, "vendor": "Microsoft Clarity", "category": "analytics"},
+    {"host": "embed.tawk.to", "requests": 5, "vendor": "Tawk.to", "category": "functional"},
+    {"host": "checkout.razorpay.com", "requests": 1, "vendor": "Razorpay", "category": "necessary"}
+  ],
+  "vendors": ["Website (session)", "WooCommerce", "Google Analytics", "Microsoft Clarity", "Meta (Facebook)", "Google Ads / DoubleClick", "Hotjar", "Tawk.to", "Google Tag Manager", "Razorpay"],
+  "findings": [
+    {"level": "high", "text": "5 cookie(s) and 2 browser-storage item(s) for optional purposes were set before the visitor made any choice. These need consent first."},
+    {"level": "high", "text": "Data was sent to 4 analytics or advertising service(s) (Google Tag Manager, Google Analytics, Meta (Facebook), Microsoft Clarity) before any choice. Sending the visitor's IP address and device details is processing even without cookies."},
+    {"level": "medium", "text": "1 item(s) set before consent couldn't be identified. If they aren't essential, they also need consent."}
+  ],
+  "errors": []
+}

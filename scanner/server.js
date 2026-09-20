@@ -15,6 +15,10 @@ const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET || "";
 // DEV ONLY: skip auth and serve the throwaway test UI at "/". Never set in production.
 const DEV = process.env.ALLOW_INSECURE === "1";
 const TEST_PAGE = path.join(__dirname, "test-frontend", "index.html");
+const CONSENT_DIR = path.join(__dirname, "..", "apps", "consent");   // consent frontend, served at /consent/
+const LEAD_WEBHOOK_URL = process.env.LEAD_WEBHOOK_URL || "";
+const LEAD_NOTICE_VERSION = process.env.LEAD_NOTICE_VERSION || "2026-09";
+const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".jpg": "image/jpeg", ".webmanifest": "application/manifest+json" };
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
 const MAX_CONCURRENT = +(process.env.MAX_CONCURRENT_SCANS || 2);
 const MAX_WAITING = 10;
@@ -79,39 +83,83 @@ function corsHeaders(origin) {
   return h;
 }
 const send = (res, code, obj, origin) => { res.writeHead(code, corsHeaders(origin)); res.end(JSON.stringify(obj)); };
+const readBody = req => new Promise((resolve, reject) => {
+  let body = ""; req.on("data", c => { body += c; if (body.length > BODY_LIMIT) req.destroy(new Error("body too large")); });
+  req.on("end", () => resolve(body)); req.on("error", reject);
+});
 
-http.createServer((req, res) => {
+// Serve a file from a base dir, safely (no path traversal).
+function serveStatic(res, baseDir, relPath) {
+  const clean = decodeURIComponent(relPath.split("?")[0]).replace(/\\/g, "/");
+  const full = path.normalize(path.join(baseDir, clean));
+  if (!full.startsWith(path.normalize(baseDir))) { res.writeHead(403); return res.end("forbidden"); }
+  fs.readFile(full, (err, buf) => {
+    if (err) { res.writeHead(404); return res.end("not found"); }
+    res.writeHead(200, { "content-type": MIME[path.extname(full).toLowerCase()] || "application/octet-stream" });
+    res.end(buf);
+  });
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+
+async function handleLead(payload) {
+  const lead = {
+    name: str(payload.name, 100), email: str(payload.email, 200).toLowerCase(), company: str(payload.company, 150),
+    website: str(payload.website, 200), phone: str(payload.phone, 30), message: str(payload.message, 1000),
+    interest: str(payload.interest, 40), marketingConsent: payload.marketingConsent === true,
+    marketingConsentText: payload.marketingConsent === true ? str(payload.marketingConsentText, 300) : "",
+    privacyNoticeVersion: LEAD_NOTICE_VERSION,
+    scanSummary: payload.scanSummary && typeof payload.scanSummary === "object" ? payload.scanSummary : null,
+    submittedAt: new Date().toISOString(),
+  };
+  if (!lead.name) throw Object.assign(new Error("Enter your name."), { status: 400 });
+  if (!EMAIL.test(lead.email)) throw Object.assign(new Error("Enter a valid work email."), { status: 400 });
+  if (!LEAD_WEBHOOK_URL) {
+    if (!DEV) throw Object.assign(new Error("Enquiries aren't switched on yet. Please email us."), { status: 503 });
+    console.log("[lead] (dev, no LEAD_WEBHOOK_URL)", JSON.stringify(lead));
+    return { ok: true };
+  }
+  const headers = { "content-type": "application/json" };
+  if (process.env.LEAD_WEBHOOK_SECRET) headers["x-kensara-secret"] = process.env.LEAD_WEBHOOK_SECRET;
+  const r = await fetch(LEAD_WEBHOOK_URL, { method: "POST", headers, body: JSON.stringify(lead), signal: AbortSignal.timeout(10000) });
+  if (!r.ok) throw Object.assign(new Error("Couldn't send your details just now. Please email us."), { status: 502 });
+  return { ok: true };
+}
+
+http.createServer(async (req, res) => {
   const origin = req.headers.origin;
   if (req.method === "OPTIONS") { res.writeHead(204, corsHeaders(origin)); return res.end(); }
   if (req.method === "GET" && req.url === "/health") return send(res, 200, { ok: true, running, waiting: waiting.length, dev: DEV }, origin);
-  // DEV ONLY: serve the throwaway test UI at "/".
-  if (DEV && req.method === "GET" && (req.url === "/" || req.url === "/index.html" || req.url === "/test")) {
-    return fs.readFile(TEST_PAGE, (err, buf) => {
-      if (err) { res.writeHead(404); return res.end("test UI not found"); }
-      res.writeHead(200, { "content-type": "text/html; charset=utf-8" }); res.end(buf);
-    });
+
+  // Consent frontend, served at /consent/ (same origin as the API).
+  if (req.method === "GET" && (req.url === "/consent" )) { res.writeHead(301, { location: "/consent/" }); return res.end(); }
+  if (req.method === "GET" && req.url.startsWith("/consent/")) {
+    const rel = req.url.slice("/consent/".length) || "index.html";
+    return serveStatic(res, CONSENT_DIR, rel === "" ? "index.html" : rel);
   }
-  if (req.method !== "POST" || req.url !== "/scan") return send(res, 404, { error: "Not found" }, origin);
+  // DEV ONLY: throwaway test UI at "/".
+  if (DEV && req.method === "GET" && (req.url === "/" || req.url === "/index.html" || req.url === "/test")) {
+    return fs.readFile(TEST_PAGE, (err, buf) => { if (err) { res.writeHead(404); return res.end("test UI not found"); } res.writeHead(200, { "content-type": "text/html; charset=utf-8" }); res.end(buf); });
+  }
 
-  let body = "";
-  req.on("data", c => { body += c; if (body.length > BODY_LIMIT) req.destroy(); });
-  req.on("end", async () => {
+  if (req.method === "POST" && (req.url === "/scan" || req.url === "/lead")) {
+    let payload;
+    try { payload = JSON.parse((await readBody(req)) || "{}"); } catch { return send(res, 400, { error: "Invalid request." }, origin); }
+    const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+    const authed = DEV || bearerOk(req) || (originAllowed(origin) && await turnstileOk(payload.turnstileToken, ip));
+    if (!authed) return send(res, 401, { error: "Unauthorised" }, origin);
     try {
-      const payload = JSON.parse(body || "{}");
-      // Auth: bearer token OR (Turnstile token + allowed origin).
-      const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-      const ok = DEV || bearerOk(req) || (originAllowed(origin) && await turnstileOk(payload.turnstileToken, ip));
-      if (!ok) return send(res, 401, { error: "Unauthorised" }, origin);
-
+      if (req.url === "/lead") return send(res, 200, await handleLead(payload), origin);
       const url = normalise(payload.url);
-      const key = url.hostname;
-      const hit = cache.get(key);
+      const hit = cache.get(url.hostname);
       if (hit && Date.now() - hit.at < CACHE_MS) return send(res, 200, { ...hit.result, cached: true }, origin);
       const result = await slot(() => scan(url));
-      if (!result.incomplete) { cache.set(key, { at: Date.now(), result }); if (cache.size > 500) cache.delete(cache.keys().next().value); }
-      send(res, 200, result, origin);
+      if (!result.incomplete) { cache.set(url.hostname, { at: Date.now(), result }); if (cache.size > 500) cache.delete(cache.keys().next().value); }
+      return send(res, 200, result, origin);
     } catch (e) {
-      send(res, e.status || 400, { error: e.status ? e.message : (e.message || "Scan failed.") }, origin);
+      return send(res, e.status || 400, { error: e.status ? e.message : (e.message || "Request failed.") }, origin);
     }
-  });
-}).listen(PORT, () => console.log(`Kensara deep scanner on :${PORT}`));
+  }
+  return send(res, 404, { error: "Not found" }, origin);
+}).listen(PORT, () => console.log(`Kensara deep scanner on :${PORT}${DEV ? " (dev: consent UI at /consent/, test UI at /)" : ""}`));

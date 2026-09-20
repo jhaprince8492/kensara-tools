@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free DPDP website check and consent banner demo | Kensara</title>
+<meta name="description" content="Scan your website for cookies and trackers, then see a DPDP-style consent banner working on a live demo.">
+<link rel="stylesheet" href="app.css">
+<script src="site-config.js"></script>
+<script src="consent.js"></script>
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="logo" href="https://www.kensara.in">Kensara <span>Consent</span></a>
+  <nav><a id="nav-pricing" href="#">Pricing</a> <button class="btn small" data-lead="header">Talk to us</button></nav>
+</div></header>
+
+<main>
+<!-- STEP 0: start -->
+<section class="step on" id="s0">
+  <div class="wrap hero">
+    <p class="eyebrow">Free check · Digital Personal Data Protection Act, 2023</p>
+    <h1>Does your website track visitors before they agree?</h1>
+    <p class="lead">We visit your site like a first-time visitor and list every cookie and tracker that runs before consent. Then see your own consent banner working, live.</p>
+    <form class="scanbox" id="scan-form">
+      <label class="sr" for="url">Website address</label>
+      <input id="url" name="url" type="text" inputmode="url" placeholder="yourwebsite.in" autocomplete="url" required>
+      <button class="btn" id="scan-btn" type="submit">Check my website</button>
+    </form>
+    <div id="turnstile" class="turnstile"></div>
+    <p class="fine">Only scan websites you own or are allowed to test. We open up to 4 public pages, don't log in or fill forms, and don't store the results. <a id="privacy-link-1" href="#">Privacy notice</a>.</p>
+    <div id="scanning" class="scanning" hidden><span class="spin" aria-hidden="true"></span><span id="scan-msg">Opening your homepage…</span></div>
+    <p class="err" id="scan-err" role="alert"></p>
+    <p class="muted">No website handy? <button class="linkbtn" id="sample">Try it with a sample website</button></p>
+    <ol class="how">
+      <li><b>Scan.</b> Cookies, browser storage and third-party trackers, found and labelled.</li>
+      <li><b>Configure.</b> Your organisation, purposes, grievance officer and notice.</li>
+      <li><b>See it work.</b> Your banner on a live demo site, blocking trackers until the visitor chooses.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- STEP 1: review -->
+<section class="step" id="s1"><div class="wrap">
+  <ol class="steps"><li class="cur">Scan results</li><li>Your details</li><li>Live demo</li></ol>
+  <h2 id="r-title">What we found</h2>
+  <p class="muted" id="r-sample-note" hidden>This is a sample website, so you can explore without scanning your own.</p>
+  <div class="summary" id="r-summary"></div>
+  <div class="card" id="r-findings"></div>
+
+  <div class="pro-card">
+    <div><b>Kensara Pro re-checks your site every month</b> and alerts you when a new tracker starts running before consent, for example after a marketing team adds a pixel.</div>
+    <button class="btn ghost" data-lead="monitoring">Get monitoring</button>
+  </div>
+
+  <h3>Cookies</h3>
+  <p class="muted">Items in amber couldn't be identified. Choose a category for each. Only mark something necessary if the site can't work without it.</p>
+  <div class="tw"><table id="r-cookies"></table></div>
+  <p><button class="linkbtn" id="add-cookie">Add a cookie by hand</button></p>
+  <h3>Other browser storage</h3>
+  <div class="tw"><table id="r-storage"></table></div>
+  <h3>Third-party services contacted before consent</h3>
+  <div class="tw"><table id="r-hosts"></table></div>
+  <p class="err" id="r-err" role="alert"></p>
+  <div class="bar"><button class="btn ghost" data-go="s0">Start over</button><button class="btn" id="to-details">Continue to your details</button></div>
+</div></section>
+
+<!-- STEP 2: details -->
+<section class="step" id="s2"><div class="wrap">
+  <ol class="steps"><li class="done">Scan results</li><li class="cur">Your details</li><li>Live demo</li></ol>
+  <h2>Your organisation's details</h2>
+  <p class="muted">These appear in the banner's notice. Nothing you enter here is sent to us or stored; it stays in this browser tab.</p>
+  <form class="card grid" id="details" novalidate>
+    <label class="f">Organisation name<abbr class="req" title="Required">*</abbr><span>The Data Fiduciary</span><input type="text" name="orgName" maxlength="150" required></label>
+    <label class="f">Website domain<input type="text" name="domain" placeholder="example.in" maxlength="200"></label>
+    <label class="f full">Full privacy notice link<abbr class="req" title="Required">*</abbr><span>Your stand-alone notice listing the personal data you process, purposes and rights</span><input type="url" name="noticeUrl" placeholder="https://example.in/privacy" required></label>
+    <label class="f full">Rights request link<span>Where people ask for access, correction, erasure or nomination (optional)</span><input type="url" name="rightsUrl" placeholder="https://example.in/privacy-requests"></label>
+    <label class="f">Grievance officer name<input type="text" name="gName" maxlength="100"></label>
+    <label class="f">Grievance officer email<abbr class="req" title="Required">*</abbr><input type="email" name="gEmail" required></label>
+    <label class="f">Grievance phone<input type="tel" name="gPhone" maxlength="30"></label>
+    <label class="f">Days to respond<span>At most 90</span><input type="number" name="gDays" min="1" max="90" value="30"></label>
+    <label class="f">Data Protection Officer email<span>If you are a Significant Data Fiduciary</span><input type="email" name="dpoEmail"></label>
+    <label class="f">Data Protection Board complaint link<abbr class="req" title="Required">*</abbr><span>Required in the notice. Pre-filled with MeitY's data protection page; replace it with the Board's official complaint portal once you've confirmed the address.</span><input type="url" name="boardUrl" value="https://www.meity.gov.in/data-protection-framework" required></label>
+
+    <div class="f full"><b>Optional purposes shown in the banner</b><span>Turned on from the scan. The personal data list is shown on the banner itself, as the notice rules ask for an itemised description. Edit it to match what you really collect.</span></div>
+    <div class="full" id="purposes"></div>
+
+    <div class="f full"><label class="check"><input type="checkbox" name="ageGate" checked> Ask visitors whether they are 18 or older. Optional purposes stay off for anyone under 18.</label>
+      <span class="pro-inline">Verifiable parental consent for children is a <b>Pro</b> feature. <button type="button" class="linkbtn" data-lead="parental-consent">Ask about it</button></span></div>
+
+    <div class="f full"><b>Languages</b>
+      <div class="checks"><label><input type="checkbox" checked disabled> English</label><label><input type="checkbox" name="lang_hi" checked> हिन्दी (Hindi)</label></div>
+      <span class="pro-inline">All 22 Eighth Schedule languages, professionally translated, come with <b>Pro</b>. <button type="button" class="linkbtn" data-lead="languages">Ask about it</button></span></div>
+
+    <label class="f">Banner position<select name="position"><option value="bottom">Bottom bar</option><option value="bottom-left">Bottom-left box</option><option value="center">Centre of screen</option></select></label>
+    <label class="f">Brand colour<input type="color" name="accent" value="#0E6BA8"></label>
+    <p class="err full" id="d-err" role="alert"></p>
+  </form>
+  <div class="bar"><button class="btn ghost" data-go="s1">Back</button><button class="btn" id="to-demo">See it working</button></div>
+</div></section>
+
+<!-- STEP 3: live demo -->
+<section class="step" id="s3"><div class="wrap wide">
+  <ol class="steps"><li class="done">Scan results</li><li class="done">Your details</li><li class="cur">Live demo</li></ol>
+  <div class="demo-head">
+    <div><h2>Your banner, working on a sample website</h2>
+      <p class="muted">Try it: press <b>Accept all</b> and watch the trackers start. Reload as a returning visitor. Open <b>Privacy choices</b> and withdraw, and watch them stop and their cookies disappear.</p></div>
+    <button class="btn ghost" data-go="s2">Edit settings</button>
+  </div>
+  <div class="demo-grid">
+    <iframe id="demo-frame" title="Sample website with your consent banner" src="about:blank"></iframe>
+    <aside class="upsell">
+      <h3>Put this on your website</h3>
+      <p class="muted">The demo shows the banner. Running it on your site, with proof that stands up, is Kensara Pro:</p>
+      <ul class="locks">
+        <li><b>One-line install</b> on any site, WordPress, Shopify or custom</li>
+        <li><b>Consent records as proof</b>: every choice logged against the exact notice version the visitor saw</li>
+        <li><b>Automatic blocking</b> of trackers we find, no code changes</li>
+        <li><b>All 22 scheduled languages</b></li>
+        <li><b>Verifiable parental consent</b> for under-18 visitors</li>
+        <li><b>Monthly re-scans</b> and alerts</li>
+      </ul>
+      <button class="btn block" data-lead="install">Get this on my website</button>
+      <p class="fine" id="pricing-line"></p>
+    </aside>
+  </div>
+  <p class="fine">This demo covers notice and consent for cookies and similar technologies. It is not legal advice. Full compliance also needs your privacy notice, a working rights and grievance process, security safeguards and processor contracts.</p>
+</div></section>
+</main>
+
+<!-- Lead form -->
+<dialog id="lead" aria-labelledby="lead-title">
+  <form id="lead-form" novalidate>
+    <div class="dh"><h2 id="lead-title">Get Kensara Pro</h2><button type="button" class="x" id="lead-close" aria-label="Close">×</button></div>
+    <div id="lead-body">
+      <p class="muted">Tell us where to reach you and we'll set up a walkthrough for your website.</p>
+      <div class="grid">
+        <label class="f">Your name<abbr class="req" title="Required">*</abbr><input name="name" maxlength="100" required autocomplete="name"></label>
+        <label class="f">Work email<abbr class="req" title="Required">*</abbr><input name="email" type="email" maxlength="200" required autocomplete="email"></label>
+        <label class="f">Company<input name="company" maxlength="150" autocomplete="organization"></label>
+        <label class="f">Website<input name="website" maxlength="200"></label>
+        <label class="f">Phone (optional)<input name="phone" type="tel" maxlength="30" autocomplete="tel"></label>
+        <label class="f full">Anything we should know? (optional)<textarea name="message" maxlength="1000" rows="3"></textarea></label>
+      </div>
+      <p class="fine" id="lead-notice"></p>
+      <label class="check"><input type="checkbox" name="marketing"> <span id="marketing-text"></span></label>
+      <div id="turnstile-lead" class="turnstile"></div>
+      <p class="err" id="lead-err" role="alert"></p>
+      <div class="bar"><span></span><button class="btn" id="lead-send" type="submit">Send</button></div>
+    </div>
+    <div id="lead-done" hidden><p><b>Thanks, we've got your details.</b> We'll be in touch within one working day.</p><div class="bar"><span></span><button type="button" class="btn" id="lead-ok">Close</button></div></div>
+  </form>
+</dialog>
+
+<footer class="site"><div class="wrap"><span>© Kensara</span> <a id="privacy-link-2" href="#">Privacy notice</a></div></footer>
+<script src="app.js"></script>
+</body>
+</html>

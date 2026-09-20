@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sample website: live banner demo</title>
+<script src="consent.js"></script>
+<link rel="stylesheet" href="demo/demo-site.css">
+</head>
+<body>
+<header class="top"><strong>Sample Store</strong><nav><a href="#">Shop</a><a href="#">About</a><a href="#" id="footer-choices">Privacy choices</a></nav></header>
+<main class="wrap">
+  <section class="hero"><h1>Handmade goods, delivered across India</h1><p>This is a sample website running <em>your</em> banner, so you can see exactly what visitors would see and what it blocks.</p></section>
+  <section class="grid">
+    <div class="card"><div class="ph"></div><b>Brass diya</b><span>₹ 499</span></div>
+    <div class="card"><div class="ph"></div><b>Cotton dupatta</b><span>₹ 899</span></div>
+    <div class="card"><div class="ph"></div><b>Clay teapot</b><span>₹ 1,299</span></div>
+  </section>
+  <section class="video"><h2>Product video</h2>
+    <iframe data-consent="marketing" data-src="demo/video.html" title="Product video" loading="lazy"></iframe>
+    <p class="muted" id="video-note">The video is held back until the visitor allows Advertising, because video players track viewers.</p>
+  </section>
+</main>
+
+<aside class="panel" aria-label="What the banner is doing">
+  <h2>Behind the scenes</h2>
+  <p class="muted">Updates live as you interact with the banner.</p>
+  <ul id="status"></ul>
+  <h3>Cookies on this page</h3><div id="cookies" class="mono"></div>
+  <h3>Browser storage</h3><div id="storage" class="mono"></div>
+  <div class="btns">
+    <button id="reload">Reload page<br><small>as a returning visitor</small></button>
+    <button id="reset">Start over<br><small>as a new visitor</small></button>
+  </div>
+</aside>
+
+<!-- Trackers, tagged so they wait for consent -->
+<script type="text/plain" data-consent="analytics" src="demo/analytics.js"></script>
+<script type="text/plain" data-consent="marketing" src="demo/marketing.js"></script>
+<script type="text/plain" data-consent="functional" src="demo/functional.js"></script>
+<script src="demo/panel.js"></script>
+</body>
+</html>

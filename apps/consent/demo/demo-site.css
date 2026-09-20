@@ -1,0 +1,15 @@
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1d2330;background:#faf8f4;padding-right:300px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:14px 22px;background:#fff;border-bottom:1px solid #e6e1d8}.top nav a{margin-left:16px;color:#1d2330}
+.wrap{max-width:860px;margin:0 auto;padding:22px}.hero h1{margin:.2em 0;font-size:1.7rem}.muted{color:#667085;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}.card{background:#fff;border:1px solid #e6e1d8;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.ph{height:90px;border-radius:8px;background:linear-gradient(135deg,#f0e4cf,#e3cfae)}
+.video iframe{width:100%;height:190px;border:1px dashed #b8b0a2;border-radius:10px;background:#efe9df}
+.panel{position:fixed;top:0;right:0;bottom:0;width:300px;background:#101827;color:#e5e9f2;padding:16px;overflow:auto;font-size:13px}
+.panel h2{margin:0;font-size:16px}.panel h3{margin:14px 0 4px;font-size:13px;color:#9fb0cc}.panel .muted{color:#9fb0cc}
+#status{list-style:none;padding:0;margin:10px 0}#status li{display:flex;justify-content:space-between;padding:6px 8px;border-radius:7px;background:#1b2537;margin-bottom:5px}
+.on{color:#7ee2a8;font-weight:600}.off{color:#f5a3a3;font-weight:600}.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all;background:#1b2537;border-radius:7px;padding:8px;min-height:32px}
+.btns{display:flex;gap:8px;margin-top:14px}.btns button{flex:1;border:0;border-radius:9px;padding:9px;background:#2b6cb0;color:#fff;cursor:pointer;font:600 13px system-ui}.btns small{font-weight:400;opacity:.85}
+#kensara-consent{--kc-right:316px}
+.chat{position:fixed;right:316px;bottom:70px;background:#1f7a4d;color:#fff;padding:10px 14px;border-radius:99px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+@media (max-width:760px){#kensara-consent{--kc-right:8px;--kc-bottom:332px}body{padding-right:0;padding-bottom:330px}.panel{top:auto;left:0;width:auto;height:320px}.grid{grid-template-columns:1fr 1fr}
+.chat{right:16px;bottom:340px}}
