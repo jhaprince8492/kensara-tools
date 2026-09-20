@@ -23,10 +23,15 @@ Auth is **either**:
 `GET /health` → `{ ok, running, waiting }`.
 
 ### Result shape (superset)
-`domain, pagesScanned, incomplete`, plus:
+`domain, pagesScanned, incomplete, score, scoreDetail`, plus:
 - **consent:** `cookies[]`, `storage[]`, `thirdParties[]`, `site{orgName,privacyUrl,email,phone}`, `cmp`
-- **gap:** `security[]`, `notice{disclosures,covered,total}`, `dataPoints[]`, `vendors[]` (name/category/region/pii), `crossBorderRegions[]`, `cloudProviders[]`, `hasPrivacyPolicy`, `hasConsentBanner`, `consentGating`, `hasDpoNamed`, `hasGrievanceContact`, `hasRightsPage`, `https`
-- **shared:** `findings[]` (with grounded upsell), `summary`, `hints[]`, `errors[]`
+- **consent proof (Tier 1):** `consent{bannerFound, hasAccept, hasReject, rejectParity, preTicked, trackersBeforeConsent, newTrackersAfterAccept, trackersAfterReject, blocksBeforeConsent, honoursReject, verdict}` — the three-state test proving whether the banner actually gates.
+- **PII surface (Tier 1):** `dataCollection{collectsData, categories[], sensitiveCategories[], collectsChildAge}` — India-aware (Aadhaar/PAN/GSTIN/UPI…).
+- **gap:** `security[]`, `notice{disclosures,covered,total,source}` (LLM-read when configured, else keyword), `dataPoints[]`, `vendors[]` (name/category/region/pii), `crossBorderRegions[]`, `cloudProviders[]`, `hasPrivacyPolicy`, `hasConsentBanner`, `consentGating`, `hasDpoNamed`, `hasGrievanceContact`, `hasRightsPage`, `https`
+- **score (Tier 3):** `score` (0–100), `scoreDetail{grade, band, sector, benchmark, vsBenchmark, drivers[]}` — every deduction explained.
+- **shared:** `findings[]` (with grounded upsell), `summary`, `hints[]`, `errors[]`, optional `evidence` (screenshot data URL).
+
+The scan visits the homepage plus journey pages (privacy/signup/checkout/contact, prioritised), fires the LLM notice read in parallel, then runs the consent probe — all inside `SCAN_DEADLINE_MS` with graceful partial results.
 
 ## Environment
 | Var | Purpose |
@@ -35,9 +40,14 @@ Auth is **either**:
 | `TURNSTILE_SECRET` | Cloudflare Turnstile secret (browser-direct auth) |
 | `ALLOWED_ORIGINS` | comma-separated origins allowed for browser-direct/CORS |
 | `MAX_PAGES` | pages per scan (default 6) |
-| `SCAN_DEADLINE_MS` | whole-scan budget (default 70000) |
+| `SCAN_DEADLINE_MS` | whole-scan budget (default 60000) |
+| `CONSENT_RESERVE_MS` | budget held back for the consent probe (default 22000) |
 | `PAGE_TIMEOUT_MS` | per-page nav timeout (default 15000) |
 | `MAX_CONCURRENT_SCANS` | parallel scans on this box (default 2) |
+| `CAPTURE_EVIDENCE` | `1` = attach a homepage screenshot (data URL) as evidence |
+| `LLM_BASE_URL` | OpenAI-compatible base, e.g. `https://integrate.api.nvidia.com/v1` (NIM), `https://api.openai.com/v1` |
+| `LLM_API_KEY` | LLM key — **absent ⇒ LLM off, keyword notice fallback used** |
+| `LLM_MODEL` | e.g. `meta/llama-3.1-8b-instruct`, `gpt-4.1-nano`, `gemini-2.0-flash` |
 | `SCANNER_SINGLE_PROCESS` | `1` = single-process Chromium (very low RAM, last resort) |
 | `SCANNER_NO_SANDBOX` | `1` = disable Chromium sandbox (only if the container can't sandbox) |
 | `CHROMIUM_PATH` | override the Chromium executable |
