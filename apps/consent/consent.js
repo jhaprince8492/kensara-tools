@@ -140,7 +140,7 @@
       cookies: (Array.isArray(c.cookies) ? c.cookies : []).slice(0, 400).filter(function (k) { return k && k.name; }),
       storage: (Array.isArray(c.storage) ? c.storage : []).slice(0, 200).filter(function (k) { return k && k.key; }),
       clearAlso: c.clearAlso || { cookies: [], storage: [] },
-      theme: { accent: /^#[0-9a-f]{6}$/i.test((c.theme || {}).accent) ? c.theme.accent : "#0E6BA8",
+      theme: { accent: /^#[0-9a-f]{6}$/i.test((c.theme || {}).accent) ? c.theme.accent : "#394b94",
         position: ["bottom", "bottom-left", "center"].indexOf((c.theme || {}).position) > -1 ? c.theme.position : "bottom" },
       ageGate: c.ageGate !== false,
       reconsentDays: isFinite(rd) && rd >= 0 ? Math.min(730, rd) : 365   // 0 = never expires
@@ -277,7 +277,7 @@
 
   /* ---------- 6. UI ---------- */
   var CSS = ":host{all:initial}*{box-sizing:border-box}" +
-    ".k{--a:#0E6BA8;--ai:#fff;--ink:#1B2440;--soft:#4A5470;--bg:#fff;--sf:#F2F4F8;--ln:#D5DAE3;--ok:#1F7A4D;--wr:#9A5B00;--er:#B3261E;" +
+    ".k{--a:#394b94;--ai:#fff;--ink:#1B2440;--soft:#4A5470;--bg:#fff;--sf:#F2F4F8;--ln:#D5DAE3;--ok:#1F7A4D;--wr:#9A5B00;--er:#B3261E;" +
     "font:15px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans','Noto Sans Devanagari',sans-serif;color:var(--ink)}" +
     "@media (prefers-color-scheme:dark){.k{--ink:#E6EAF3;--soft:#A9B2C7;--bg:#161C2E;--sf:#1F2740;--ln:#313B58;--ok:#5BC98C;--wr:#E3A64A;--er:#F2877E}}" +
     "a{color:var(--a)}button,select,input{font:inherit}:focus-visible{outline:3px solid #F2A900;outline-offset:2px}" +

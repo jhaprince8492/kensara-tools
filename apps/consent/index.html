@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Free DPDP website check and consent banner demo | Kensara</title>
 <meta name="description" content="Scan your website for cookies and trackers, then see a DPDP-style consent banner working on a live demo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css">
 <script src="site-config.js"></script>
 <script src="consent.js"></script>
@@ -19,24 +22,21 @@
 <!-- STEP 0: start -->
 <section class="step on" id="s0">
   <div class="wrap hero">
-    <p class="eyebrow">Free check · Digital Personal Data Protection Act, 2023</p>
-    <h1>Does your website track visitors before they agree?</h1>
-    <p class="lead">We visit your site like a first-time visitor and list every cookie and tracker that runs before consent. Then see your own consent banner working, live.</p>
+    <p class="eyebrow">Kensara Consent · DPDP Act, 2023</p>
+    <h1>A DPDP-ready consent banner,<br>live on your site in minutes.</h1>
+    <p class="lead">Scan, generate, and see it block trackers before consent. Then let <b>Kensara Pro</b> run it for you.</p>
     <form class="scanbox" id="scan-form">
       <label class="sr" for="url">Website address</label>
       <input id="url" name="url" type="text" inputmode="url" placeholder="yourwebsite.in" autocomplete="url" required>
-      <button class="btn" id="scan-btn" type="submit">Check my website</button>
+      <button class="btn" id="scan-btn" type="submit">Build my banner</button>
     </form>
     <div id="turnstile" class="turnstile"></div>
-    <p class="fine">Only scan websites you own or are allowed to test. We open up to 4 public pages, don't log in or fill forms, and don't store the results. <a id="privacy-link-1" href="#">Privacy notice</a>.</p>
     <div id="scanning" class="scanning" hidden><span class="spin" aria-hidden="true"></span><span id="scan-msg">Opening your homepage…</span></div>
     <p class="err" id="scan-err" role="alert"></p>
-    <p class="muted">No website handy? <button class="linkbtn" id="sample">Try it with a sample website</button></p>
-    <ol class="how">
-      <li><b>Scan.</b> Cookies, browser storage and third-party trackers, found and labelled.</li>
-      <li><b>Configure.</b> Your organisation, purposes, grievance officer and notice.</li>
-      <li><b>See it work.</b> Your banner on a live demo site, blocking trackers until the visitor chooses.</li>
-    </ol>
+    <p class="muted">No website handy? <button class="linkbtn" id="sample">Try a sample</button> · <a id="privacy-link-1" href="#" class="muted">Privacy</a></p>
+    <ul class="prostrip">
+      <li>One-line install</li><li>Automatic tracker blocking</li><li>Consent records as proof</li><li>All 22 scheduled languages</li>
+    </ul>
   </div>
 </section>
 
@@ -93,7 +93,7 @@
       <span class="pro-inline">All 22 Eighth Schedule languages, professionally translated, come with <b>Pro</b>. <button type="button" class="linkbtn" data-lead="languages">Ask about it</button></span></div>
 
     <label class="f">Banner position<select name="position"><option value="bottom">Bottom bar</option><option value="bottom-left">Bottom-left box</option><option value="center">Centre of screen</option></select></label>
-    <label class="f">Brand colour<input type="color" name="accent" value="#0E6BA8"></label>
+    <label class="f">Brand colour<input type="color" name="accent" value="#394b94"></label>
     <p class="err full" id="d-err" role="alert"></p>
   </form>
   <div class="bar"><button class="btn ghost" data-go="s1">Back</button><button class="btn" id="to-demo">See it working</button></div>
