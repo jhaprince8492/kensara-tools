@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<!-- TEST UI ONLY — throwaway harness to eyeball every scanner output. Delete before prod. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kensara Deep Scanner — Test Harness</title>
+<style>
+  :root{--bg:#0f1a1c;--card:#16252a;--line:#2a3e43;--ink:#e3eeec;--soft:#9db3b0;--brand:#3fbfae;--hi:#f2877e;--med:#e3a64a;--ok:#5bc98c;--pill:#0d2b2f}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 18px 80px}
+  h1{font-size:22px;margin:0 0 4px}.sub{color:var(--soft);font-size:13px;margin:0 0 18px}
+  form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  input[type=url]{flex:1;min-width:260px;padding:11px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+  button{padding:11px 18px;border-radius:9px;border:0;background:var(--brand);color:#062;cursor:pointer;font-weight:700}
+  button:disabled{opacity:.5;cursor:default}
+  .status{color:var(--soft);font-size:13px;min-height:18px;margin:6px 0}
+  .err{color:var(--hi)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:10px 0}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .tile b{font-size:22px;display:block}.tile span{color:var(--soft);font-size:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0}
+  .card h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft)}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--soft)}
+  code{background:#0c1416;padding:1px 5px;border-radius:5px;font-size:12px}
+  .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;background:var(--pill);color:var(--brand)}
+  .pill.hi{background:#3a1512;color:var(--hi)}.pill.med{background:#3a2c12;color:var(--med)}.pill.ok{background:#12331f;color:var(--ok)}.pill.low{background:#1b2a2d;color:var(--soft)}
+  .score{display:flex;align-items:center;gap:16px}
+  .score .num{font-size:44px;font-weight:800;line-height:1}
+  .driver{display:flex;gap:10px;font-size:13px;margin:3px 0}.driver .imp{color:var(--hi);font-weight:700;min-width:34px}
+  .find{display:flex;gap:10px;margin:7px 0;font-size:14px}
+  .kv{display:grid;grid-template-columns:180px 1fr;gap:4px 12px;font-size:13px}
+  .kv div:nth-child(odd){color:var(--soft)}
+  details{margin-top:14px}summary{cursor:pointer;color:var(--brand)}
+  pre{background:#0c1416;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:12px;max-height:420px}
+  .muted{color:var(--soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kensara Deep Scanner — test harness</h1>
+  <p class="sub">Throwaway UI to inspect every field the scanner returns. Not for production.</p>
+  <form id="f">
+    <input id="url" type="url" placeholder="https://example.com" value="https://www.kensara.in" required>
+    <button id="go" type="submit">Scan</button>
+  </form>
+  <p class="status" id="status"></p>
+  <div id="out"></div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const sev = l => l === "high" ? "hi" : l === "medium" ? "med" : "low";
+
+const MSGS = ["Opening the homepage…","Waiting for tags and pixels…","Testing the consent banner…","Reading cookies and storage…","Checking the privacy notice…","Scoring…"];
+let tick;
+
+$("#f").addEventListener("submit", async e => {
+  e.preventDefault();
+  const url = $("#url").value.trim(); if (!url) return;
+  $("#go").disabled = true; $("#out").innerHTML = ""; $("#status").className = "status";
+  let i = 0; $("#status").textContent = MSGS[0];
+  tick = setInterval(() => $("#status").textContent = MSGS[Math.min(++i, MSGS.length-1)], 6000);
+  const t0 = Date.now();
+  try {
+    const r = await fetch("/scan", { method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({ url }) });
+    const data = await r.json();
+    clearInterval(tick);
+    if (!r.ok) throw new Error(data.error || "Scan failed");
+    $("#status").textContent = `Done in ${((Date.now()-t0)/1000).toFixed(1)}s`;
+    render(data);
+  } catch (err) { clearInterval(tick); $("#status").className = "status err"; $("#status").textContent = err.message; }
+  finally { $("#go").disabled = false; }
+});
+
+function render(d) {
+  const out = $("#out"); out.innerHTML = "";
+  const card = (title) => { const c = el("div","card"); if (title) c.appendChild(el("h2",null,title)); out.appendChild(c); return c; };
+
+  // Score
+  if (d.scoreDetail) {
+    const c = card("DPDP readiness (Tier 3)");
+    const s = d.scoreDetail;
+    const row = el("div","score");
+    row.appendChild(el("div","num", esc(d.score)));
+    row.appendChild(el("div", null, `<div><span class="pill ${s.score>=65?'ok':s.score>=50?'med':'hi'}">${esc(s.grade)} · ${esc(s.band)}</span></div>
+      <div class="muted" style="margin-top:6px">Sector: <b>${esc(s.sector)}</b> · benchmark ${esc(s.benchmark)} · you ${s.vsBenchmark>=0?'+':''}${esc(s.vsBenchmark)}</div>`));
+    c.appendChild(row);
+    if (s.drivers?.length){ const dv=el("div",null,"<div style='margin-top:10px'></div>"); s.drivers.forEach(x=>dv.appendChild(el("div","driver",`<span class="imp">${esc(x.impact)}</span><span>${esc(x.text)}</span>`))); c.appendChild(dv);}
+  }
+
+  // Consent proof
+  if (d.consent) {
+    const c = card("Consent banner proof (Tier 1)"); const v = d.consent;
+    const vpill = { "ok":"ok","tracks-before-consent":"hi","ignores-reject":"hi","no-banner":"hi","no-reject-option":"med","pre-ticked":"med","not-tested":"low" }[v.verdict]||"low";
+    c.appendChild(el("div",null,`<span class="pill ${vpill}">verdict: ${esc(v.verdict)}</span>`));
+    c.appendChild(el("div","kv",`
+      <div>Banner found</div><div>${yn(v.bannerFound)}</div>
+      <div>Accept control</div><div>${yn(v.hasAccept)} ${v.acceptText?`<span class="muted">“${esc(v.acceptText)}”</span>`:""}</div>
+      <div>Reject control (parity)</div><div>${yn(v.hasReject)} ${v.rejectText?`<span class="muted">“${esc(v.rejectText)}”</span>`:""}</div>
+      <div>Pre-ticked optional</div><div>${yn(v.preTicked)}</div>
+      <div>Trackers before consent</div><div>${esc(v.trackersBeforeConsent)}</div>
+      <div>New trackers after Accept</div><div>${esc(v.newTrackersAfterAccept)}</div>
+      <div>Trackers after Reject</div><div>${v.trackersAfterReject==null?'<span class="muted">not tested</span>':esc(v.trackersAfterReject)}</div>
+      <div>Blocks before consent</div><div>${tri(v.blocksBeforeConsent)}</div>
+      <div>Honours reject</div><div>${tri(v.honoursReject)}</div>`));
+  }
+
+  // Summary tiles
+  if (d.summary) {
+    const c = card("Summary"); const g = el("div","grid"); const s = d.summary;
+    const tiles = [["pages",s.pages],["cookies",s.cookies],["pre-consent trackers",s.trackers],["pre-consent cookies/storage",s.preConsentCookies],["cross-border regions",s.crossBorder],["sensitive PII cats",s.sensitivePII],["CMP",s.cmp||"none"]];
+    tiles.forEach(([k,v])=>g.appendChild(el("div","tile",`<b>${esc(v)}</b><span>${esc(k)}</span>`))); c.appendChild(g);
+  }
+
+  // Findings
+  if (d.findings?.length){ const c=card("Findings"); d.findings.forEach(f=>c.appendChild(el("div","find",`<span class="pill ${sev(f.level)}">${esc(f.level)}</span><span>${esc(f.text)}</span>`))); }
+
+  // Site prefill
+  if (d.site){ const c=card("Organisation prefill (from scan)"); c.appendChild(el("div","kv",`
+    <div>Org name</div><div>${esc(d.site.orgName||"—")}</div>
+    <div>Privacy URL</div><div>${esc(d.site.privacyUrl||"—")}</div>
+    <div>Email</div><div>${esc(d.site.email||"—")}</div>
+    <div>Phone</div><div>${esc(d.site.phone||"—")}</div>`)); }
+
+  // PII surface
+  if (d.dataCollection){ const c=card("Personal-data surface (Tier 1)"); const p=d.dataCollection;
+    c.appendChild(el("div",null,`Collects data: ${yn(p.collectsData)} · fields: ${esc(p.fieldCount)} · child age: ${yn(p.collectsChildAge)} ${p.sensitiveCategories?.length?`· <span class="pill hi">sensitive: ${esc(p.sensitiveCategories.join(", "))}</span>`:""}`));
+    if (p.categories?.length){ const t=tbl(["Category","Risk","Count","Examples"]); p.categories.forEach(x=>addRow(t,[x.label,`<span class="pill ${x.risk==='high'?'hi':x.risk==='medium'?'med':'low'}">${x.risk}</span>`,x.count,esc((x.examples||[]).join(", "))])); c.appendChild(t);} }
+
+  // Cookies
+  if (d.cookies){ const c=card(`Cookies (${d.cookies.length})`); const t=tbl(["Name","Vendor","Category","Kept for","Party","Flags","Purpose/suggest"]);
+    d.cookies.forEach(k=>addRow(t,[`<code>${esc(k.name)}</code>`,esc(k.vendor),cat(k.category),esc(k.duration),k.firstParty===false?"3rd":"1st",`${k.httpOnly?'HttpOnly ':''}${k.secure?'Secure':''}`,esc(k.purpose||"")+(k.suggested?` <span class="pill med">→${esc(k.suggested)}</span>`:"")])); c.appendChild(t); }
+
+  // Storage
+  if (d.storage?.length){ const c=card(`Browser storage (${d.storage.length})`); const t=tbl(["Key","Where","Vendor","Category"]); d.storage.forEach(s=>addRow(t,[`<code>${esc(s.key)}</code>`,esc(s.area),esc(s.vendor),cat(s.category)])); c.appendChild(t); }
+
+  // Third parties
+  if (d.thirdParties?.length){ const c=card(`Third-party hosts (${d.thirdParties.length})`); const t=tbl(["Host","Vendor","Category","Region","PII","Reqs"]); d.thirdParties.forEach(h=>addRow(t,[`<code>${esc(h.host)}</code>`,esc(h.vendor),cat(h.category),esc(h.region||"—"),yn(h.pii),esc(h.requests)])); c.appendChild(t); }
+
+  // Vendors (gap)
+  if (d.vendors?.length){ const c=card(`Vendors detected (${d.vendors.length}) · PII vendors ${d.piiVendorCount}`); const t=tbl(["Vendor","Category","Region","PII"]); d.vendors.forEach(v=>addRow(t,[esc(v.name),esc(v.category),esc(v.region),yn(v.pii)])); c.appendChild(t);
+    if (d.crossBorderRegions?.length) c.appendChild(el("div","muted",`Cross-border: ${esc(d.crossBorderRegions.join(", "))}${d.cloudProviders?.length?` · Cloud: ${esc(d.cloudProviders.join(", "))}`:""}`)); }
+
+  // Notice
+  if (d.notice){ const c=card(`Privacy notice (${esc(d.notice.source||"?")}${d.notice.keywordFallback?" · fallback":""})`); const n=d.notice;
+    c.appendChild(el("div",null,`Present: ${yn(d.hasPrivacyPolicy)} · covered <b>${esc(n.covered)}/${esc(n.total)}</b>${n.summary?`<div class="muted" style="margin-top:6px">${esc(n.summary)}</div>`:""}`));
+    if (n.disclosures?.length){ const t=tbl(["Disclosure","Covered","Evidence"]); n.disclosures.forEach(x=>addRow(t,[esc(x.label),yn(x.covered),esc(x.evidence||"")])); c.appendChild(t); }
+    if (n.gaps?.length) c.appendChild(el("div","muted",`Gaps: ${esc(n.gaps.join("; "))}`)); }
+
+  // Security
+  if (d.security?.length){ const c=card("Security posture"); const t=tbl(["Check","OK"]); d.security.forEach(s=>addRow(t,[esc(s.label),yn(s.ok)])); c.appendChild(t); }
+
+  // Data points
+  if (d.dataPoints?.length){ const c=card("Data-collection signals"); const t=tbl(["Signal","Present"]); d.dataPoints.forEach(s=>addRow(t,[esc(s.label),yn(s.present)])); c.appendChild(t); }
+
+  // Evidence
+  if (d.evidence){ const c=card("Evidence"); c.appendChild(el("img",null,"")); c.lastChild.src=d.evidence; c.lastChild.style="max-width:100%;border:1px solid var(--line);border-radius:8px"; }
+
+  // Raw
+  const det=el("details",null,`<summary>Raw JSON</summary>`); const pre=el("pre",null,esc(JSON.stringify(d,null,2))); det.appendChild(pre); out.appendChild(det);
+}
+function yn(b){ return b?'<span class="pill ok">yes</span>':'<span class="pill low">no</span>'; }
+function tri(b){ return b===true?'<span class="pill ok">yes</span>':b===false?'<span class="pill hi">no</span>':'<span class="pill low">n/a</span>'; }
+function cat(c){ const m={necessary:"low",functional:"ok",analytics:"med",marketing:"hi",unclassified:"low"}; return `<span class="pill ${m[c]||'low'}">${esc(c)}</span>`; }
+function tbl(cols){ const t=el("table"); const tr=el("tr"); cols.forEach(c=>tr.appendChild(el("th",null,esc(c)))); t.appendChild(tr); return t; }
+function addRow(t,cells){ const tr=el("tr"); cells.forEach(c=>tr.appendChild(el("td",null,c))); t.appendChild(tr); }
+</script>
+</body>
+</html>

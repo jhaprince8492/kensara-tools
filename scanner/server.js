@@ -4,12 +4,17 @@
 const http = require("http");
 const crypto = require("crypto");
 const net = require("net");
+const fs = require("fs");
+const path = require("path");
 const { scan } = require("./lib/scanner");
 const { isPrivateIp } = require("./lib/egress-proxy");
 
 const PORT = +(process.env.PORT || 8080);
 const TOKEN = process.env.SCANNER_TOKEN || "";
 const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET || "";
+// DEV ONLY: skip auth and serve the throwaway test UI at "/". Never set in production.
+const DEV = process.env.ALLOW_INSECURE === "1";
+const TEST_PAGE = path.join(__dirname, "test-frontend", "index.html");
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
 const MAX_CONCURRENT = +(process.env.MAX_CONCURRENT_SCANS || 2);
 const MAX_WAITING = 10;
@@ -78,7 +83,14 @@ const send = (res, code, obj, origin) => { res.writeHead(code, corsHeaders(origi
 http.createServer((req, res) => {
   const origin = req.headers.origin;
   if (req.method === "OPTIONS") { res.writeHead(204, corsHeaders(origin)); return res.end(); }
-  if (req.method === "GET" && req.url === "/health") return send(res, 200, { ok: true, running, waiting: waiting.length }, origin);
+  if (req.method === "GET" && req.url === "/health") return send(res, 200, { ok: true, running, waiting: waiting.length, dev: DEV }, origin);
+  // DEV ONLY: serve the throwaway test UI at "/".
+  if (DEV && req.method === "GET" && (req.url === "/" || req.url === "/index.html" || req.url === "/test")) {
+    return fs.readFile(TEST_PAGE, (err, buf) => {
+      if (err) { res.writeHead(404); return res.end("test UI not found"); }
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" }); res.end(buf);
+    });
+  }
   if (req.method !== "POST" || req.url !== "/scan") return send(res, 404, { error: "Not found" }, origin);
 
   let body = "";
@@ -88,7 +100,7 @@ http.createServer((req, res) => {
       const payload = JSON.parse(body || "{}");
       // Auth: bearer token OR (Turnstile token + allowed origin).
       const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-      const ok = bearerOk(req) || (originAllowed(origin) && await turnstileOk(payload.turnstileToken, ip));
+      const ok = DEV || bearerOk(req) || (originAllowed(origin) && await turnstileOk(payload.turnstileToken, ip));
       if (!ok) return send(res, 401, { error: "Unauthorised" }, origin);
 
       const url = normalise(payload.url);
