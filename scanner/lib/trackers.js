@@ -1,7 +1,7 @@
 // Known cookies and third-party hosts, used to pre-classify scan results.
 // category: necessary | functional | analytics | marketing
 // Anything not matched is returned as "unclassified" and the organisation must choose.
-// Extend this list over time — it is the heart of scan quality.
+// Extend this list over time, it is the heart of scan quality.
 
 const COOKIES = [
   // ---- Necessary: sessions, security, carts, load balancing ----
@@ -131,7 +131,7 @@ const TAGGING_HINTS = {
 
 // Plain-language best guesses for cookies we don't recognise by name, so a
 // non-technical user isn't left staring at a bare "Unknown". These never decide
-// the category on their own — they only SUGGEST one and explain, in everyday
+// the category on their own, they only SUGGEST one and explain, in everyday
 // words, what the name looks like. The organisation still confirms.
 const GUESSES = [
   { re: /(^|[_-])(sess|sid|session|token|csrf|xsrf|auth|login|logged|secure|cart|checkout|nonce|verify)([_-]|\d|$)/i,
@@ -143,7 +143,7 @@ const GUESSES = [
   { re: /(^|[_-])(lang|locale|i18n|country|region|theme|dark|font|chat|widget|tawk|zendesk|intercom|crisp|drift|player|video|embed|map|pref|display|ui|timezone)([_-]|\d|$)/i,
     category: "functional", note: "The name suggests a convenience feature such as language, chat, maps or an embedded widget." },
   { re: /(uuid|guid|visitor_?id|client_?id|device_?id|user_?id|[_-]uid|anon)/i,
-    category: "analytics", note: "This stores a unique ID for your browser, usually to recognise repeat visitors. That is normally analytics, but some advertising tools do the same — please confirm which applies." },
+    category: "analytics", note: "This stores a unique ID for your browser, usually to recognise repeat visitors. That is normally analytics, but some advertising tools do the same, please confirm which applies." },
 ];
 function guessCookie(name) {
   for (const g of GUESSES) if (g.re.test(name)) return { category: g.category, note: g.note };

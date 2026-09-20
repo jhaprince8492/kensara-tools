@@ -1,5 +1,5 @@
 // A single, explainable DPDP-readiness score (0-100, higher = better) plus a sector
-// guess and a rough benchmark. Grounded entirely in the scan signals — every deduction
+// guess and a rough benchmark. Grounded entirely in the scan signals, every deduction
 // is listed in `drivers` so the report can show its working. The gap frontend may still
 // apply its own scoring; this is a scanner-side convenience + upsell hook.
 
@@ -19,7 +19,7 @@ function guessSector(html) {
 }
 
 // Static, indicative sector baselines (avg readiness we typically see). Placeholder
-// numbers — refine with real data later; used only for "you vs typical" framing.
+// numbers, refine with real data later; used only for "you vs typical" framing.
 const SECTOR_BASELINE = { fintech: 58, ecommerce: 44, healthcare: 46, education: 42, saas: 52, media: 38, general: 46 };
 
 function computeScore(r) {
@@ -43,7 +43,7 @@ function computeScore(r) {
   const secMissing = (r.security || []).filter(s => !s.ok).length;
   if (secMissing) hit(Math.min(10, secMissing * 2), `${secMissing} security header(s)/control(s) missing.`);
 
-  if ((r.crossBorderRegions || []).length) hit(8, `Cross-border data flows (${r.crossBorderRegions.join(", ")}) — must be disclosed.`);
+  if ((r.crossBorderRegions || []).length) hit(8, `Cross-border data flows (${r.crossBorderRegions.join(", ")}), must be disclosed.`);
 
   const pii = r.dataCollection || {};
   if ((pii.sensitiveCategories || []).length) hit(6, `Collects higher-risk personal data (${pii.sensitiveCategories.join(", ")}).`);

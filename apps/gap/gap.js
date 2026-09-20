@@ -84,7 +84,7 @@
     crossBorder: { title: "Undisclosed cross-border transfers", ceiling: "₹50 Cr head", service: "Data-flow mapping & transfer notices", blurb: "We map every destination, disclose transfers correctly and put processor terms in place for each overseas service." },
     children: { title: "Children's data without parental consent", ceiling: "₹200 Cr head", service: "Age-gating & verifiable parental consent", blurb: "Age assurance plus a verifiable parental-consent flow, so processing of minors meets Section 9." },
     rights: { title: "No data-principal rights mechanism", ceiling: "₹50 Cr head", service: "Rights & grievance workflow", blurb: "A working access/correction/erasure/nomination workflow and a named grievance officer with SLAs." },
-    governance: { title: "Governance & DPO duties unmet", ceiling: "₹150 Cr head", service: "DPO-as-a-service & DPIA", blurb: "A named DPO, annual DPIAs and independent audits — the Significant Data Fiduciary duties under Section 10." },
+    governance: { title: "Governance & DPO duties unmet", ceiling: "₹150 Cr head", service: "DPO-as-a-service & DPIA", blurb: "A named DPO, annual DPIAs and independent audits, the Significant Data Fiduciary duties under Section 10." },
     vendorGovernance: { title: "Processors without contracts", ceiling: "₹50 Cr head", service: "Processor governance", blurb: "Data-processing agreements and due-diligence for every third party that touches personal data." },
     retention: { title: "No retention or erasure policy", ceiling: "₹50 Cr head", service: "Retention & erasure policy", blurb: "Purpose-bound retention schedules and automated erasure once data is no longer needed." },
   };
@@ -101,8 +101,8 @@
       { key: "notice", label: "Privacy notice", score: clamp(cov * 100), finding: `Notice covers ${d.notice ? d.notice.covered : 0} of ${d.notice ? d.notice.total : 9} DPDP disclosures.` },
       { key: "security", label: "Security safeguards", score: clamp((secOk / secTot) * 100), finding: `${secOk}/${secTot} transport, header and cookie controls in place.` },
       { key: "rights", label: "Data-principal rights", score: d.hasRightsPage ? 78 : 42, finding: d.hasRightsPage ? "A rights/request mechanism was found." : "No access/correction/erasure mechanism found." },
-      { key: "crossBorder", label: "Cross-border transfers", score: (d.crossBorderRegions || []).length ? (has("crossBorder") ? 62 : 40) : 88, finding: (d.crossBorderRegions || []).length ? `Data flows to ${d.crossBorderRegions.join(", ")}${has("crossBorder") ? " (disclosed)" : " — not clearly disclosed"}.` : "No obvious cross-border transfers." },
-      { key: "children", label: "Children's data", score: (d.dataCollection && d.dataCollection.collectsChildAge) ? (has("children") ? 66 : 30) : 86, finding: (d.dataCollection && d.dataCollection.collectsChildAge) ? "Age/DOB collected — parental-consent duties apply." : "No children's-data collection detected." },
+      { key: "crossBorder", label: "Cross-border transfers", score: (d.crossBorderRegions || []).length ? (has("crossBorder") ? 62 : 40) : 88, finding: (d.crossBorderRegions || []).length ? `Data flows to ${d.crossBorderRegions.join(", ")}${has("crossBorder") ? " (disclosed)" : ", not clearly disclosed"}.` : "No obvious cross-border transfers." },
+      { key: "children", label: "Children's data", score: (d.dataCollection && d.dataCollection.collectsChildAge) ? (has("children") ? 66 : 30) : 86, finding: (d.dataCollection && d.dataCollection.collectsChildAge) ? "Age/DOB collected, parental-consent duties apply." : "No children's-data collection detected." },
       { key: "governance", label: "Governance & DPO", score: d.hasDpoNamed ? 72 : 44, finding: d.hasDpoNamed ? "A DPO/grievance officer is named." : "No DPO or grievance officer named." },
       { key: "vendorGovernance", label: "Processor governance", score: clamp(100 - Math.min(60, (d.piiVendorCount || 0) * 7)), finding: `${d.piiVendorCount || 0} third parties handle personal data.` },
       { key: "retention", label: "Data retention", score: has("retention") ? 74 : 46, finding: has("retention") ? "Retention is addressed in the notice." : "No retention or erasure policy disclosed." },
@@ -161,7 +161,7 @@
     const band = bandForScore(score);
     const worst = cats.filter(c => c.score < 70 && SERVICE[c.key]).sort((a, b) => a.score - b.score).slice(0, 3);
     const priorityGaps = worst.map(c => ({ ...SERVICE[c.key], severity: c.score < 35 ? "Critical" : c.score < 55 ? "High" : "Medium", impact: c.finding }));
-    const urgency = band === "Strong" ? "You're ahead of most — lock in readiness before enforcement begins." : band === "Developing" ? "You have foundations, but the gaps below carry real exposure before enforcement." : "These gaps are the kind the Board acts on first. Closing them now is far cheaper than a penalty.";
+    const urgency = band === "Strong" ? "You're ahead of most, lock in readiness before enforcement begins." : band === "Developing" ? "You have foundations, but the gaps below carry real exposure before enforcement." : "These gaps are the kind the Board acts on first. Closing them now is far cheaper than a penalty.";
     return {
       domain: d.domain, generatedAt: d.scannedAt || new Date().toISOString(), score, band, sector: (d.scoreDetail && d.scoreDetail.sector) || "general",
       benchmark: d.scoreDetail && d.scoreDetail.benchmark, vsBenchmark: d.scoreDetail && d.scoreDetail.vsBenchmark,
@@ -212,15 +212,15 @@
   function consentHtml(m) {
     const c = m.consent || {};
     if (!c.verdict || c.verdict === "not-tested") return "";
-    const vmeta = { "ok": ["good", "Your banner blocks trackers until the visitor chooses. This is what DPDP expects."], "tracks-before-consent": ["bad", "Your banner is cosmetic — trackers fire before the visitor makes any choice. Under DPDP this is processing without consent."], "ignores-reject": ["bad", "Clicking Reject did not stop the trackers. Refusal must be honoured as easily as acceptance."], "no-banner": ["bad", "No consent banner was found, yet trackers run before any choice."], "no-reject-option": ["mid", "Your banner offers no clear Reject. DPDP expects refusing to be as easy as accepting."], "pre-ticked": ["mid", "Optional purposes are pre-ticked. Consent must be a clear affirmative action, not a default."] };
+    const vmeta = { "ok": ["good", "Your banner blocks trackers until the visitor chooses. This is what DPDP expects."], "tracks-before-consent": ["bad", "Your banner is cosmetic, trackers fire before the visitor makes any choice. Under DPDP this is processing without consent."], "ignores-reject": ["bad", "Clicking Reject did not stop the trackers. Refusal must be honoured as easily as acceptance."], "no-banner": ["bad", "No consent banner was found, yet trackers run before any choice."], "no-reject-option": ["mid", "Your banner offers no clear Reject. DPDP expects refusing to be as easy as accepting."], "pre-ticked": ["mid", "Optional purposes are pre-ticked. Consent must be a clear affirmative action, not a default."] };
     const vm = vmeta[c.verdict] || ["mid", "Banner behaviour needs review."];
     const tri = b => b === true ? '<span style="color:var(--ok);font-weight:700">Yes</span>' : b === false ? '<span style="color:var(--hi);font-weight:700">No</span>' : '<span class="muted">n/a</span>';
     return `<div class="sec alt"><div class="wrap"><p class="kick">Consent, actually tested</p><h2>${ICON.shieldCheck} Does your banner really block anything?</h2>
-      <p class="intro">Most scanners only look for a banner. We clicked your own <b>Accept</b> and <b>Reject</b> in fresh sessions to measure what actually fires — the proof a regulator would want.</p>
+      <p class="intro">Most scanners only look for a banner. We clicked your own <b>Accept</b> and <b>Reject</b> in fresh sessions to measure what actually fires, the proof a regulator would want.</p>
       <div class="proof">
         <div class="pstate"><div class="st">Before any choice</div><div class="big">${c.trackersBeforeConsent ?? 0}</div><div class="cap">tracker services already contacted</div></div>
         <div class="pstate"><div class="st">After “Accept”</div><div class="big">+${c.newTrackersAfterAccept ?? 0}</div><div class="cap">new tracker services appeared</div></div>
-        <div class="pstate"><div class="st">After “Reject”</div><div class="big">${c.trackersAfterReject == null ? "—" : c.trackersAfterReject}</div><div class="cap">${c.trackersAfterReject == null ? "not tested" : "still firing after refusal"}</div></div>
+        <div class="pstate"><div class="st">After “Reject”</div><div class="big">${c.trackersAfterReject == null ? "n/a" : c.trackersAfterReject}</div><div class="cap">${c.trackersAfterReject == null ? "not tested" : "still firing after refusal"}</div></div>
       </div>
       <div class="grid3" style="margin-top:16px">
         <div class="card soft"><h3>Reject offered (parity)</h3><p style="margin-top:8px">${tri(c.hasReject)}</p></div>
@@ -251,7 +251,7 @@
     if (!dcol.collectsData && !(dcol.categories || []).length) return "";
     const rows = (dcol.categories || []).map(c => `<div class="cat"><div class="row"><b>${esc(c.label)}</b><span class="sev ${c.risk === "high" ? "Critical" : c.risk === "medium" ? "High" : "Medium"}">${esc(c.risk)}</span></div><p>${esc((c.examples || []).join(", ") || (c.count + " field(s)"))}</p></div>`).join("");
     return `<div class="sec alt"><div class="wrap"><p class="kick">Personal-data surface</p><h2>${ICON.fingerprint} What you actually ask people for</h2>
-      <p class="intro">We read the real form fields across your pages. DPDP is about personal data, not just cookies${(dcol.sensitiveCategories || []).length ? ` — and you collect <b style="color:var(--hi)">${esc(dcol.sensitiveCategories.join(", "))}</b>, which raises the stakes` : ""}.</p>
+      <p class="intro">We read the real form fields across your pages. DPDP is about personal data, not just cookies${(dcol.sensitiveCategories || []).length ? `, and you collect <b style="color:var(--hi)">${esc(dcol.sensitiveCategories.join(", "))}</b>, which raises the stakes` : ""}.</p>
       <div class="catlist">${rows || '<p class="muted">No structured personal-data fields detected.</p>'}</div></div></div>`;
   }
 
@@ -310,13 +310,13 @@
     const pe = m.penalty;
     return `<div class="cta"><div class="wrap"><div class="box"><div class="cta-grid">
       <div><p class="kick">This is the surface</p><h2>A full techno-legal gap assessment goes far deeper.</h2>
-        <p class="intro">This deep scan covers what's publicly visible. Our experts map every data flow, processor and obligation, then deliver a prioritised roadmap to audit-ready compliance in 2–6 weeks.</p>
+        <p class="intro">This deep scan covers what's publicly visible. Our experts map every data flow, processor and obligation, then deliver a prioritised roadmap to audit-ready compliance in 2 to 6 weeks.</p>
         <div style="margin-top:20px"><a class="btn" href="${esc(SITE.bookDemoUrl || "#")}" target="_blank" rel="noopener">Book your full gap assessment ${ICON.arrow}</a></div>
         <div class="trust">${["60% lower cost", "100% audit success", "Zero IT disruption"].map(t => `<span>${ICON.check.replace('class="i"', 'class="i" style="color:var(--ok)"')} ${t}</span>`).join("")}</div>
       </div>
       <div class="expo"><p class="kick">Likely exposure</p><p class="amt">${esc(pe.practicalLabel)}</p><div class="bar"><i style="width:${pe.capCr > 0 ? Math.max(4, Math.round((pe.practicalMaxCr / pe.capCr) * 100)) : 0}%;background:linear-gradient(90deg,#fbbf24,#ef4444)"></i></div><p class="muted" style="font-size:12px;margin-top:8px">Statutory cap ${esc(pe.capLabel)}</p><p class="muted" style="font-size:14px;margin-top:12px">Enforcement begins May 2027.</p></div>
     </div></div>
-    <p class="disc">This assessment is indicative and for informational purposes only — it is not legal advice. Results are based on a deep scan of public pages. Kensara stores only the details you submit, and uses them solely to prepare your report and follow up.</p>
+    <p class="disc">This assessment is indicative and for informational purposes only, it is not legal advice. Results are based on a deep scan of public pages. Kensara stores only the details you submit, and uses them solely to prepare your report and follow up.</p>
     </div></div>`;
   }
 
@@ -331,7 +331,7 @@
     wireUnlock();
   }
   function animate(m) {
-    // gauge — set the final value first so it's correct even if rAF is throttled (background tab)
+    // gauge, set the final value first so it's correct even if rAF is throttled (background tab)
     const ring = $("#g-ring"), num = $("#g-num"); const C = 2 * Math.PI * 84;
     if (num) num.textContent = m.score;
     if (ring) ring.style.strokeDashoffset = C - (m.score / 100) * C;

@@ -1,4 +1,4 @@
-/* Kensara Gap Assessment — brand theme (indigo primary, slate-900 hero). */
+/* Kensara Gap Assessment, brand theme (indigo primary, slate-900 hero). */
 :root{
   --brand:#394b94;        /* indigo-600, matches the site primary */
   --brand-2:#7b8fd6;      /* blue-400 accent (gradient) */
@@ -54,6 +54,9 @@ footer.site .wrap{height:auto;padding-top:18px;padding-bottom:18px;gap:16px;flex
 .how{list-style:none;padding:0;margin:36px 0 0;display:grid;gap:14px;grid-template-columns:repeat(3,1fr);max-width:960px}
 .how li{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;font-size:14px;color:var(--soft)}
 .how b{color:var(--ink);display:block;margin-bottom:3px}
+.prostrip{display:flex;flex-wrap:wrap;gap:8px;padding:0;list-style:none;margin:30px 0 0}
+.prostrip li{font-size:13px;font-weight:500;color:var(--ink);background:color-mix(in srgb,var(--brand) 8%,transparent);border:1px solid color-mix(in srgb,var(--brand) 22%,transparent);border-radius:99px;padding:6px 13px}
+.prostrip li::before{content:"✓";color:var(--brand);font-weight:700;margin-right:6px}
 
 /* ===== report ===== */
 .hero{position:relative;overflow:hidden;background:var(--slate);color:#fff;padding:64px 0 56px}

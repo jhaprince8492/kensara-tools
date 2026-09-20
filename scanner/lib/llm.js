@@ -1,7 +1,7 @@
 // Provider-agnostic privacy-notice reader. Uses any OpenAI-compatible chat endpoint,
 // so you can point it at NVIDIA NIM (free prototyping), Gemini, OpenAI, Groq, etc. by
 // env alone. Returns a reasoned DPDP disclosure assessment; the scanner falls back to
-// keyword coverage if this is disabled, times out, or errors — so it's never a hard dep.
+// keyword coverage if this is disabled, times out, or errors, so it's never a hard dep.
 //
 //   LLM_BASE_URL  e.g. https://integrate.api.nvidia.com/v1  |  https://api.openai.com/v1
 //   LLM_API_KEY   provider key (absent => feature off, keyword fallback used)

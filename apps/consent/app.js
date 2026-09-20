@@ -117,7 +117,7 @@
     const rows = state.cookies;
     $("#r-cookies").innerHTML = `<tr><th>Cookie</th><th>Provider</th><th>Kept for</th><th>Set by</th><th>Category</th><th></th></tr>` +
       (rows.length ? rows.map((c, i) => `<tr class="${c.category === "unclassified" ? "unc" : ""}">
-        <td><code>${esc(c.name)}</code>${c.purpose ? `<div class="fine">${esc(c.purpose)}</div>` : ""}${c.guessed ? `<div class="fine guess">Auto-suggested — please confirm the category</div>` : ""}</td>
+        <td><code>${esc(c.name)}</code>${c.purpose ? `<div class="fine">${esc(c.purpose)}</div>` : ""}${c.guessed ? `<div class="fine guess">Auto-suggested, please confirm the category</div>` : ""}</td>
         <td>${esc(c.vendor)}</td><td>${esc(c.duration)}</td><td>${c.firstParty === false ? "Third party" : "This site"}</td>
         <td>${catSelect(c.category, "cookie", i)}</td><td><button class="linkbtn" data-del-cookie="${i}" aria-label="Remove ${esc(c.name)}">Remove</button></td></tr>`).join("")
         : `<tr><td colspan="6" class="muted">No cookies found.</td></tr>`);
@@ -127,7 +127,7 @@
   function renderStorage() {
     const rows = state.storage;
     $("#r-storage").innerHTML = `<tr><th>Key</th><th>Where</th><th>Provider</th><th>Category</th></tr>` +
-      (rows.length ? rows.map((s, i) => `<tr class="${s.category === "unclassified" ? "unc" : ""}"><td><code>${esc(s.key)}</code>${s.purpose ? `<div class="fine">${esc(s.purpose)}</div>` : ""}${s.guessed ? `<div class="fine guess">Auto-suggested — please confirm</div>` : ""}</td><td>${esc(s.area)}</td><td>${esc(s.vendor)}</td><td>${catSelect(s.category, "storage", i)}</td></tr>`).join("")
+      (rows.length ? rows.map((s, i) => `<tr class="${s.category === "unclassified" ? "unc" : ""}"><td><code>${esc(s.key)}</code>${s.purpose ? `<div class="fine">${esc(s.purpose)}</div>` : ""}${s.guessed ? `<div class="fine guess">Auto-suggested, please confirm</div>` : ""}</td><td>${esc(s.area)}</td><td>${esc(s.vendor)}</td><td>${catSelect(s.category, "storage", i)}</td></tr>`).join("")
         : `<tr><td colspan="4" class="muted">None found.</td></tr>`);
     wireSelects("#r-storage");
   }

@@ -1,5 +1,5 @@
 // PII surface mapping. Enumerates real form fields across the visited pages and
-// classifies what personal data the site actually asks for — India-aware (Aadhaar,
+// classifies what personal data the site actually asks for, India-aware (Aadhaar,
 // PAN, GSTIN, UPI…). DPDP is about personal data, not just cookies, so this maps the
 // true collection surface that generic cookie scanners never see.
 

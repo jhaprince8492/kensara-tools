@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- TEST UI ONLY — throwaway harness to eyeball every scanner output. Delete before prod. -->
+<!-- TEST UI ONLY, throwaway harness to eyeball every scanner output. Delete before prod. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kensara Deep Scanner — Test Harness</title>
+<title>Kensara Deep Scanner, Test Harness</title>
 <style>
   :root{--bg:#0f1a1c;--card:#16252a;--line:#2a3e43;--ink:#e3eeec;--soft:#9db3b0;--brand:#3fbfae;--hi:#f2877e;--med:#e3a64a;--ok:#5bc98c;--pill:#0d2b2f}
   *{box-sizing:border-box}
@@ -41,7 +41,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Kensara Deep Scanner — test harness</h1>
+  <h1>Kensara Deep Scanner, test harness</h1>
   <p class="sub">Throwaway UI to inspect every field the scanner returns. Not for production.</p>
   <form id="f">
     <input id="url" type="url" placeholder="https://example.com" value="https://www.kensara.in" required>
@@ -122,10 +122,10 @@ function render(d) {
 
   // Site prefill
   if (d.site){ const c=card("Organisation prefill (from scan)"); c.appendChild(el("div","kv",`
-    <div>Org name</div><div>${esc(d.site.orgName||"—")}</div>
-    <div>Privacy URL</div><div>${esc(d.site.privacyUrl||"—")}</div>
-    <div>Email</div><div>${esc(d.site.email||"—")}</div>
-    <div>Phone</div><div>${esc(d.site.phone||"—")}</div>`)); }
+    <div>Org name</div><div>${esc(d.site.orgName||"n/a")}</div>
+    <div>Privacy URL</div><div>${esc(d.site.privacyUrl||"n/a")}</div>
+    <div>Email</div><div>${esc(d.site.email||"n/a")}</div>
+    <div>Phone</div><div>${esc(d.site.phone||"n/a")}</div>`)); }
 
   // PII surface
   if (d.dataCollection){ const c=card("Personal-data surface (Tier 1)"); const p=d.dataCollection;
@@ -140,7 +140,7 @@ function render(d) {
   if (d.storage?.length){ const c=card(`Browser storage (${d.storage.length})`); const t=tbl(["Key","Where","Vendor","Category"]); d.storage.forEach(s=>addRow(t,[`<code>${esc(s.key)}</code>`,esc(s.area),esc(s.vendor),cat(s.category)])); c.appendChild(t); }
 
   // Third parties
-  if (d.thirdParties?.length){ const c=card(`Third-party hosts (${d.thirdParties.length})`); const t=tbl(["Host","Vendor","Category","Region","PII","Reqs"]); d.thirdParties.forEach(h=>addRow(t,[`<code>${esc(h.host)}</code>`,esc(h.vendor),cat(h.category),esc(h.region||"—"),yn(h.pii),esc(h.requests)])); c.appendChild(t); }
+  if (d.thirdParties?.length){ const c=card(`Third-party hosts (${d.thirdParties.length})`); const t=tbl(["Host","Vendor","Category","Region","PII","Reqs"]); d.thirdParties.forEach(h=>addRow(t,[`<code>${esc(h.host)}</code>`,esc(h.vendor),cat(h.category),esc(h.region||"n/a"),yn(h.pii),esc(h.requests)])); c.appendChild(t); }
 
   // Vendors (gap)
   if (d.vendors?.length){ const c=card(`Vendors detected (${d.vendors.length}) · PII vendors ${d.piiVendorCount}`); const t=tbl(["Vendor","Category","Region","PII"]); d.vendors.forEach(v=>addRow(t,[esc(v.name),esc(v.category),esc(v.region),yn(v.pii)])); c.appendChild(t);

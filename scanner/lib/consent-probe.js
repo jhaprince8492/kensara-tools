@@ -1,4 +1,4 @@
-// Three-state consent probe — the finding no free competitor shows.
+// Three-state consent probe, the finding no free competitor shows.
 // Loads the site's OWN banner and proves whether it actually gates trackers:
 //   1. pre-consent : what fires before any choice
 //   2. accept      : click the site's "Accept" -> did new trackers only now appear (gated) or were they already firing (not gated)?

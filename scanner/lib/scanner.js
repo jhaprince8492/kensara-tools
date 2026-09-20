@@ -1,4 +1,4 @@
-// Deep scanner — one browser scan feeds BOTH free tools.
+// Deep scanner, one browser scan feeds BOTH free tools.
 //   consent banner generator : cookies, storage, third-party hosts, site details, live consent-blocking proof
 //   gap assessment           : security headers, notice coverage (LLM-read), PII surface, vendors, cross-border, score
 //
@@ -251,7 +251,7 @@ async function run(browser, url, siteDomain, deadlineAt) {
     try { consent = await probeConsent(browser, url.href, url.hostname, deadlineAt - 3000); } catch (e) { consent = { bannerFound: false, verdict: "not-tested" }; }
   }
 
-  // 4) LLM notice (already running in parallel) — collect, else keyword fallback later.
+  // 4) LLM notice (already running in parallel), collect, else keyword fallback later.
   const llm = llmPromise ? await llmPromise : null;
 
   // ---- consent-shaped output ----
@@ -298,11 +298,11 @@ async function run(browser, url, siteDomain, deadlineAt) {
   const findings = [];
   if (preCookies.length || preStorage.length) findings.push({ level: "high", text: `${preCookies.length} cookie(s) and ${preStorage.length} browser-storage item(s) for optional purposes were set before the visitor made any choice. These need consent first.` });
   if (preHosts.length) findings.push({ level: "high", text: `Data was sent to ${preHosts.length} analytics or advertising service(s) (${preHosts.slice(0, 4).map(h => h.vendor).join(", ")}) before any choice.` });
-  if (consent.verdict === "tracks-before-consent") findings.push({ level: "high", text: "The consent banner is cosmetic — trackers fire before the visitor chooses. Kensara Pro blocks trackers until consent and logs each choice against the notice shown." });
-  else if (consent.verdict === "ignores-reject") findings.push({ level: "high", text: "Clicking “Reject” did not stop the trackers — the banner doesn't honour refusal. Kensara Pro enforces the choice and proves it." });
-  else if (consent.verdict === "no-reject-option") findings.push({ level: "medium", text: "The consent banner offers no clear “Reject” — DPDP expects refusing to be as easy as accepting." });
+  if (consent.verdict === "tracks-before-consent") findings.push({ level: "high", text: "The consent banner is cosmetic, trackers fire before the visitor chooses. Kensara Pro blocks trackers until consent and logs each choice against the notice shown." });
+  else if (consent.verdict === "ignores-reject") findings.push({ level: "high", text: "Clicking “Reject” did not stop the trackers, the banner doesn't honour refusal. Kensara Pro enforces the choice and proves it." });
+  else if (consent.verdict === "no-reject-option") findings.push({ level: "medium", text: "The consent banner offers no clear “Reject”, DPDP expects refusing to be as easy as accepting." });
   else if (consent.verdict === "no-banner" && (preHosts.length || preCookies.length)) findings.push({ level: "high", text: "No consent banner was found, yet trackers run before any choice. Kensara Pro installs a DPDP-ready banner that blocks them automatically." });
-  else if (consent.preTicked) findings.push({ level: "medium", text: "Optional purposes are pre-ticked in the banner — consent must be a clear affirmative action, not a default." });
+  else if (consent.preTicked) findings.push({ level: "medium", text: "Optional purposes are pre-ticked in the banner, consent must be a clear affirmative action, not a default." });
   if ((dataCollection.sensitiveCategories || []).length) findings.push({ level: "medium", text: `The site collects higher-risk personal data (${dataCollection.sensitiveCategories.join(", ")}). This raises notice, security and (for children) verifiable-consent obligations.` });
   if (crossBorderRegions.length) findings.push({ level: "medium", text: `Personal data appears to flow outside India (${crossBorderRegions.join(", ")}). Cross-border transfers must be disclosed.` });
   if (!hasPrivacyPolicy) findings.push({ level: "high", text: "No privacy notice was found. DPDP requires a clear, itemised notice before collecting personal data." });
