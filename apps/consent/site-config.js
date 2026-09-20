@@ -3,6 +3,7 @@ window.KENSARA_SITE = {
   // Deep scanner API base. "" = same origin (the scanner service serves this app).
   // For a separate static host, set the full origin, e.g. "https://consent.kensara.in".
   scannerBase: "",
+  bookDemoUrl: "https://kensara.in/book-demo",
   privacyNoticeUrl: "https://kensara.in/privacy",   // Kensara's OWN privacy notice (covers the lead form and scans)
   contactEmail: "contact@kensara.in",
   pricingUrl: "https://kensara.in/pricing",

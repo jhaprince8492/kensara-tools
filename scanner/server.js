@@ -17,6 +17,7 @@ const DEV = process.env.ALLOW_INSECURE === "1";
 const TEST_PAGE = path.join(__dirname, "test-frontend", "index.html");
 const CONSENT_DIR = path.join(__dirname, "..", "apps", "consent");   // consent frontend, served at /consent/
 const GAP_DIR = path.join(__dirname, "..", "apps", "gap");           // gap-assessment frontend, served at /gap/
+const ASSETS_DIR = path.join(__dirname, "..", "apps", "assets");     // shared logos/favicon, served at /assets/
 const LEAD_WEBHOOK_URL = process.env.LEAD_WEBHOOK_URL || "";
 const LEAD_NOTICE_VERSION = process.env.LEAD_NOTICE_VERSION || "2026-09";
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".jpg": "image/jpeg", ".webmanifest": "application/manifest+json" };
@@ -143,6 +144,9 @@ http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url.startsWith("/gap/")) {
     const rel = req.url.slice("/gap/".length) || "index.html";
     return serveStatic(res, GAP_DIR, rel === "" ? "index.html" : rel);
+  }
+  if (req.method === "GET" && req.url.startsWith("/assets/")) {
+    return serveStatic(res, ASSETS_DIR, req.url.slice("/assets/".length));
   }
   // DEV ONLY: throwaway test UI at "/".
   if (DEV && req.method === "GET" && (req.url === "/" || req.url === "/index.html" || req.url === "/test")) {

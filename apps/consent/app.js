@@ -17,9 +17,9 @@
   const API = String(SITE.scannerBase || "").replace(/\/$/, "");
 
   /* ---------- links from site-config.js ---------- */
-  ["#privacy-link-1", "#privacy-link-2"].forEach(s => { $(s).href = SITE.privacyNoticeUrl || "#"; });
-  $("#nav-pricing").href = SITE.pricingUrl || "#";
-  $("#pricing-line").innerHTML = SITE.pricingUrl ? `See <a href="${esc(SITE.pricingUrl)}" target="_blank" rel="noopener">plans and pricing</a>.` : "";
+  ["#privacy-link-1", "#privacy-link-2"].forEach(s => { const el = $(s); if (el) el.href = SITE.privacyNoticeUrl || "#"; });
+  const navDemo = $("#nav-demo"); if (navDemo) navDemo.href = SITE.bookDemoUrl || "#";
+  const priceLine = $("#pricing-line"); if (priceLine) priceLine.innerHTML = SITE.pricingUrl ? `See <a href="${esc(SITE.pricingUrl)}" target="_blank" rel="noopener">plans and pricing</a>.` : "";
 
   /* ---------- optional Cloudflare Turnstile ---------- */
   const widgets = {};

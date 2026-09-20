@@ -30,8 +30,13 @@ header.site,footer.site{background:#fff;border-bottom:1px solid var(--line)}
 footer.site{border-bottom:0;border-top:1px solid var(--line);margin-top:0;color:var(--soft);font-size:13px}
 header.site .wrap,footer.site .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
 footer.site .wrap{height:auto;padding-top:18px;padding-bottom:18px;gap:16px;flex-wrap:wrap}
-.logo{font-weight:800;font-size:18px;color:var(--ink);text-decoration:none;letter-spacing:-.01em}
+.logo{display:inline-flex;align-items:center;gap:9px;font-weight:800;font-size:18px;color:var(--ink);text-decoration:none;letter-spacing:-.01em}
 .logo span{color:var(--brand);font-weight:700}
+.logo .mark{height:28px;width:auto;display:block}
+.trust-strip{display:flex;align-items:center;gap:14px;margin:30px 0 0;flex-wrap:wrap}
+.trust-strip span{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);font-weight:600}
+.trust-strip img{height:34px;width:auto;opacity:.75;filter:grayscale(1);transition:opacity .2s,filter .2s}
+.trust-strip img:hover{opacity:1;filter:grayscale(0)}
 
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--brand);color:var(--brand-ink);border:0;border-radius:10px;padding:12px 20px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;transition:filter .15s}
