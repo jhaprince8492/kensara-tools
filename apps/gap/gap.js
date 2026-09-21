@@ -7,6 +7,22 @@
   const REGION_FLAG = { US: "🇺🇸", EU: "🇪🇺", IN: "🇮🇳", Global: "🌐" };
   const DEADLINE = new Date("2027-05-13T00:00:00Z");
 
+  /* ---------- optional Cloudflare Turnstile (bot gate for browser-direct scans) ---------- */
+  const widgets = {};
+  function loadTurnstile() {
+    if (!SITE.turnstileSiteKey) return;
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__kTurnstile";
+    s.async = true; s.defer = true;
+    window.__kTurnstile = () => {
+      if (document.querySelector("#turnstile") && window.turnstile) widgets.scan = turnstile.render("#turnstile", { sitekey: SITE.turnstileSiteKey });
+    };
+    document.head.appendChild(s);
+  }
+  const tsToken = w => (SITE.turnstileSiteKey && window.turnstile && widgets[w] !== undefined) ? turnstile.getResponse(widgets[w]) : "";
+  const tsReset = w => { if (SITE.turnstileSiteKey && window.turnstile && widgets[w] !== undefined) turnstile.reset(widgets[w]); };
+  loadTurnstile();
+
   /* ---------- inline icons (24 viewBox, stroke) ---------- */
   const P = { fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" };
   const svg = d => `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -449,12 +465,12 @@
     let i = 0; $("#scan-msg").textContent = MSGS[0];
     const tick = setInterval(() => $("#scan-msg").textContent = MSGS[Math.min(++i, MSGS.length - 1)], 7000);
     try {
-      const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: "", mode: "gap" }) });
+      const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: tsToken("scan"), mode: "gap" }) });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || "The assessment didn't finish. Try again.");
       gated = true; questionnaireStep(data);                // scan done -> ask the 6 questions -> then the report
     } catch (err) { $("#scan-err").textContent = err.message; }
-    finally { clearInterval(tick); $("#scan-btn").disabled = false; $("#scanning").hidden = true; }
+    finally { clearInterval(tick); tsReset("scan"); $("#scan-btn").disabled = false; $("#scanning").hidden = true; }
   });
   // Sample skips the questions and shows a fully-built example report (scan + typical answers).
   $("#sample").onclick = () => { gated = true; renderReport(buildModel(window.__SAMPLE__, window.__SAMPLE_ANSWERS__ || null)); };

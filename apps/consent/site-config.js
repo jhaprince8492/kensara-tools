@@ -7,5 +7,5 @@ window.KENSARA_SITE = {
   privacyNoticeUrl: "https://kensara.in/privacy",   // Kensara's OWN privacy notice (covers the lead form and scans)
   contactEmail: "contact@kensara.in",
   pricingUrl: "https://kensara.in/pricing",
-  turnstileSiteKey: ""                               // Cloudflare Turnstile site key. Empty = no bot check (fine for local testing)
+  turnstileSiteKey: "0x4AAAAAAE_K0NXlEPS4MHqw"       // Cloudflare Turnstile site key (public). Empty = no bot check.
 };

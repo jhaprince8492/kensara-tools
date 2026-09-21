@@ -6,5 +6,5 @@ window.KENSARA_SITE = {
   bookDemoUrl: "https://kensara.in/book-demo",
   privacyNoticeUrl: "https://kensara.in/privacy",
   contactEmail: "contact@kensara.in",
-  turnstileSiteKey: ""   // Cloudflare Turnstile site key. Empty = no bot check (local testing)
+  turnstileSiteKey: "0x4AAAAAAE_K0NXlEPS4MHqw"   // Cloudflare Turnstile site key (public). Empty = no bot check.
 };
