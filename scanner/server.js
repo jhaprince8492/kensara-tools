@@ -23,9 +23,13 @@ const LEAD_NOTICE_VERSION = process.env.LEAD_NOTICE_VERSION || "2026-09";
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".jpg": "image/jpeg", ".webmanifest": "application/manifest+json" };
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
 const MAX_CONCURRENT = +(process.env.MAX_CONCURRENT_SCANS || 2);
-const MAX_WAITING = 10;
+const MAX_WAITING = +(process.env.MAX_WAITING || 10);
 const CACHE_MS = 60 * 60 * 1000;
 const BODY_LIMIT = 8192;
+// Per-IP gate (applies to every IP). RATE_MAX_PER_MIN scans/min, plus a cap on
+// in-flight scans per IP, so no single client can monopolise the box. 0 disables.
+const RATE_MAX_PER_MIN = +(process.env.RATE_MAX_PER_MIN || 6);
+const RATE_MAX_CONCURRENT_IP = +(process.env.RATE_MAX_CONCURRENT_IP || 2);
 
 if (TOKEN && TOKEN.length < 32) { console.error("SCANNER_TOKEN must be 32+ chars (openssl rand -hex 32)."); process.exit(1); }
 if (!TOKEN && !TURNSTILE_SECRET) console.warn("[scanner] No SCANNER_TOKEN and no TURNSTILE_SECRET set — the endpoint is UNPROTECTED. Set at least one.");
@@ -62,6 +66,25 @@ function normalise(input) {
   u.hash = "";
   return u;
 }
+
+// Per-IP rate limiter: sliding 60s window + in-flight cap. Applies to every IP.
+const ipWindow = new Map();   // ip -> [timestamps]
+const ipInflight = new Map(); // ip -> count
+function rateCheck(ip) {
+  if (!RATE_MAX_PER_MIN && !RATE_MAX_CONCURRENT_IP) return null;
+  const key = ip || "unknown", now = Date.now();
+  if (RATE_MAX_CONCURRENT_IP && (ipInflight.get(key) || 0) >= RATE_MAX_CONCURRENT_IP)
+    return "Please wait for your current scan to finish.";
+  if (RATE_MAX_PER_MIN) {
+    const arr = (ipWindow.get(key) || []).filter(t => now - t < 60000);
+    if (arr.length >= RATE_MAX_PER_MIN) { ipWindow.set(key, arr); return "Too many scans from your network. Please wait a minute and try again."; }
+    arr.push(now); ipWindow.set(key, arr);
+  }
+  if (ipWindow.size > 5000) for (const [k, v] of ipWindow) if (!v.some(t => now - t < 60000)) ipWindow.delete(k);
+  return null;
+}
+const ipEnter = ip => ipInflight.set(ip || "unknown", (ipInflight.get(ip || "unknown") || 0) + 1);
+const ipLeave = ip => { const k = ip || "unknown", n = (ipInflight.get(k) || 1) - 1; if (n <= 0) ipInflight.delete(k); else ipInflight.set(k, n); };
 
 const cache = new Map();
 let running = 0; const waiting = [];
@@ -156,16 +179,22 @@ http.createServer(async (req, res) => {
   if (req.method === "POST" && (req.url === "/scan" || req.url === "/lead")) {
     let payload;
     try { payload = JSON.parse((await readBody(req)) || "{}"); } catch { return send(res, 400, { error: "Invalid request." }, origin); }
-    const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+    const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
     const authed = DEV || bearerOk(req) || (originAllowed(origin) && await turnstileOk(payload.turnstileToken, ip));
     if (!authed) return send(res, 401, { error: "Unauthorised" }, origin);
     try {
       if (req.url === "/lead") return send(res, 200, await handleLead(payload), origin);
+      const limited = rateCheck(ip);                          // per-IP gate
+      if (limited) return send(res, 429, { error: limited }, origin);
+      const mode = payload.mode === "consent" ? "consent" : "gap";
       const url = normalise(payload.url);
-      const hit = cache.get(url.hostname);
+      const key = mode + ":" + url.hostname;
+      const hit = cache.get(key);
       if (hit && Date.now() - hit.at < CACHE_MS) return send(res, 200, { ...hit.result, cached: true }, origin);
-      const result = await slot(() => scan(url));
-      if (!result.incomplete) { cache.set(url.hostname, { at: Date.now(), result }); if (cache.size > 500) cache.delete(cache.keys().next().value); }
+      ipEnter(ip);
+      let result;
+      try { result = await slot(() => scan(url, { mode })); } finally { ipLeave(ip); }
+      if (!result.incomplete) { cache.set(key, { at: Date.now(), result }); if (cache.size > 500) cache.delete(cache.keys().next().value); }
       return send(res, 200, result, origin);
     } catch (e) {
       return send(res, e.status || 400, { error: e.status ? e.message : (e.message || "Request failed.") }, origin);

@@ -29,12 +29,18 @@ function getChromiumExecutable() {
   return undefined;
 }
 
-const MAX_PAGES = +(process.env.MAX_PAGES || 6);
 const PAGE_TIMEOUT = +(process.env.PAGE_TIMEOUT_MS || 15000);
-const SCAN_DEADLINE_MS = +(process.env.SCAN_DEADLINE_MS || 60000);
-const CONSENT_RESERVE_MS = +(process.env.CONSENT_RESERVE_MS || 22000); // budget kept aside for the consent probe
 const HTML_CAP = 300000;
 const CAPTURE_EVIDENCE = process.env.CAPTURE_EVIDENCE === "1";
+
+// Scan profiles. The gap assessment needs the full deep read and gets a generous
+// deadline so it stays qualitative even when several run at once (it takes longer,
+// it does not cut corners). The consent banner tool runs light (fewer pages, no
+// LLM / PII / three-state probe / HTML capture) so many can run concurrently cheaply.
+const PROFILES = {
+  gap:     { maxPages: +(process.env.MAX_PAGES || 6),        deadlineMs: +(process.env.GAP_DEADLINE_MS || 90000),     reserveMs: +(process.env.CONSENT_RESERVE_MS || 22000), probe: true,  llm: true,  pii: true,  html: true },
+  consent: { maxPages: +(process.env.CONSENT_MAX_PAGES || 3), deadlineMs: +(process.env.CONSENT_DEADLINE_MS || 40000), reserveMs: 0, probe: false, llm: false, pii: false, html: false },
+};
 
 let proxyPort = null;
 function startProxy(opts = {}) {
@@ -80,7 +86,8 @@ function journeyRank(h) {
   return 5;
 }
 
-async function scan(url, { proxyOptions } = {}) {
+async function scan(url, { proxyOptions, mode } = {}) {
+  const profile = PROFILES[mode] || PROFILES.gap;
   const port = await startProxy(proxyOptions);
   const siteDomain = registrable(url.hostname);
   const browser = await chromium.launch({
@@ -99,24 +106,25 @@ async function scan(url, { proxyOptions } = {}) {
       ...(process.env.SCANNER_NO_SANDBOX === "1" ? ["--no-sandbox"] : []),
     ],
   });
-  const deadlineAt = Date.now() + SCAN_DEADLINE_MS;
+  const deadlineAt = Date.now() + profile.deadlineMs;
   let timer;
-  const backstop = new Promise((_, rej) => { timer = setTimeout(() => rej(Object.assign(new Error("The scan took too long. Try again or add cookies by hand."), { status: 504 })), SCAN_DEADLINE_MS + 8000); });
+  const backstop = new Promise((_, rej) => { timer = setTimeout(() => rej(Object.assign(new Error("The scan took too long. Try again or add cookies by hand."), { status: 504 })), profile.deadlineMs + 8000); });
   try {
-    return await Promise.race([backstop, run(browser, url, siteDomain, deadlineAt)]);
+    return await Promise.race([backstop, run(browser, url, siteDomain, deadlineAt, profile)]);
   } finally {
     clearTimeout(timer);
     await browser.close().catch(() => {});
   }
 }
 
-async function run(browser, url, siteDomain, deadlineAt) {
+async function run(browser, url, siteDomain, deadlineAt, profile) {
+  const MAX_PAGES = profile.maxPages;
   const hosts = new Map(), storageKeys = new Set(), pagesVisited = [], errors = [], htmlParts = [], rawFields = [];
   let site = {}, homeHeaders = {}, homeHtml = "", privacyText = "", finalHttps = url.protocol === "https:", evidence = null;
   let llmPromise = null;
   const timeLeft = () => deadlineAt - Date.now();
-  // Reserve time for the consent probe at the end.
-  const crawlDeadline = () => timeLeft() - CONSENT_RESERVE_MS;
+  // Reserve time for the consent probe at the end (0 when the profile skips it).
+  const crawlDeadline = () => timeLeft() - profile.reserveMs;
 
   const context = await browser.newContext(CONTEXT_OPTS);
   await harden(context);
@@ -161,13 +169,17 @@ async function run(browser, url, siteDomain, deadlineAt) {
       }), 3000);
       (Array.isArray(keys) ? keys : []).forEach(k => storageKeys.add(JSON.stringify(k)));
 
-      // PII fields on this page.
-      const fields = await withTimeout(page.evaluate(collectFieldsInPage), 3000);
-      if (Array.isArray(fields)) for (const f of fields) if (rawFields.length < 400) rawFields.push(f);
-
-      const html = await withTimeout(page.content(), 3500);
-      const text = (typeof html === "string" ? html : "").slice(0, HTML_CAP);
-      if (text) { htmlParts.push(text); if (isHome) homeHtml = text; if (isPrivacy && !privacyText) privacyText = text; }
+      // PII fields on this page (gap profile only).
+      if (profile.pii) {
+        const fields = await withTimeout(page.evaluate(collectFieldsInPage), 3000);
+        if (Array.isArray(fields)) for (const f of fields) if (rawFields.length < 400) rawFields.push(f);
+      }
+      // HTML capture for the gap posture analysis (gap profile only).
+      if (profile.html) {
+        const html = await withTimeout(page.content(), 3500);
+        const text = (typeof html === "string" ? html : "").slice(0, HTML_CAP);
+        if (text) { htmlParts.push(text); if (isHome) homeHtml = text; if (isPrivacy && !privacyText) privacyText = text; }
+      }
 
       let links = [];
       if (isHome) {
@@ -211,7 +223,7 @@ async function run(browser, url, siteDomain, deadlineAt) {
 
   // Fire the LLM notice read as soon as we have policy text, so it overlaps the rest.
   function maybeStartLlm() {
-    if (llmPromise) return;
+    if (!profile.llm || llmPromise) return;
     const src = privacyText || (/(privacy|cookie|data protection)/i.test(homeHtml) ? homeHtml : "");
     if (!src) return;
     const budget = clamp(timeLeft() - 2000, 3000, 12000);
@@ -245,9 +257,9 @@ async function run(browser, url, siteDomain, deadlineAt) {
   await context.close().catch(() => {});
   const cookieList = Array.isArray(rawCookies) ? rawCookies : [];
 
-  // 3) Three-state consent probe (fresh contexts), within the reserved budget.
+  // 3) Three-state consent probe (fresh contexts), within the reserved budget (gap profile only).
   let consent = { bannerFound: false, verdict: "not-tested" };
-  if (timeLeft() > 12000) {
+  if (profile.probe && timeLeft() > 12000) {
     try { consent = await probeConsent(browser, url.href, url.hostname, deadlineAt - 3000); } catch (e) { consent = { bannerFound: false, verdict: "not-tested" }; }
   }
 

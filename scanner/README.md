@@ -31,7 +31,7 @@ Auth is **either**:
 - **score (Tier 3):** `score` (0–100), `scoreDetail{grade, band, sector, benchmark, vsBenchmark, drivers[]}` — every deduction explained.
 - **shared:** `findings[]` (with grounded upsell), `summary`, `hints[]`, `errors[]`, optional `evidence` (screenshot data URL).
 
-The scan visits the homepage plus journey pages (privacy/signup/checkout/contact, prioritised), fires the LLM notice read in parallel, then runs the consent probe — all inside `SCAN_DEADLINE_MS` with graceful partial results.
+Two profiles via `mode` in the request: **`gap`** (default) does the full deep read — journey pages, LLM notice, PII surface, three-state consent probe — with a generous budget so it stays qualitative even when several run at once; **`consent`** runs light (fewer pages, no LLM/PII/probe/HTML) so many can run concurrently cheaply. A per-IP rate limit applies to every request.
 
 ## Environment
 | Var | Purpose |
@@ -39,11 +39,16 @@ The scan visits the homepage plus journey pages (privacy/signup/checkout/contact
 | `SCANNER_TOKEN` | 32+ char bearer for server-to-server auth |
 | `TURNSTILE_SECRET` | Cloudflare Turnstile secret (browser-direct auth) |
 | `ALLOWED_ORIGINS` | comma-separated origins allowed for browser-direct/CORS |
-| `MAX_PAGES` | pages per scan (default 6) |
-| `SCAN_DEADLINE_MS` | whole-scan budget (default 60000) |
-| `CONSENT_RESERVE_MS` | budget held back for the consent probe (default 22000) |
+| `MAX_PAGES` | gap-scan pages (default 6) |
+| `GAP_DEADLINE_MS` | gap-scan budget, generous so it stays full-quality under load (default 90000) |
+| `CONSENT_RESERVE_MS` | budget held back for the consent probe in a gap scan (default 22000) |
+| `CONSENT_MAX_PAGES` | consent-scan pages (default 3) |
+| `CONSENT_DEADLINE_MS` | consent-scan budget — light profile, no probe/LLM/PII (default 40000) |
 | `PAGE_TIMEOUT_MS` | per-page nav timeout (default 15000) |
-| `MAX_CONCURRENT_SCANS` | parallel scans on this box (default 2) |
+| `MAX_CONCURRENT_SCANS` | parallel scans on this box (default 2; set to 5 on a 4–8 GB box) |
+| `RATE_MAX_PER_MIN` | scans per IP per minute (default 6; 0 = off) |
+| `RATE_MAX_CONCURRENT_IP` | in-flight scans per IP (default 2) |
+| `MAX_WAITING` | queue depth before returning "busy" 503 (default 10) |
 | `CAPTURE_EVIDENCE` | `1` = attach a homepage screenshot (data URL) as evidence |
 | `LLM_BASE_URL` | OpenAI-compatible base, e.g. `https://integrate.api.nvidia.com/v1` (NIM), `https://api.openai.com/v1` |
 | `LLM_API_KEY` | LLM key — **absent ⇒ LLM off, keyword notice fallback used** |

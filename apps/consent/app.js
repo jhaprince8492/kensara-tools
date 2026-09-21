@@ -59,7 +59,7 @@
     let i = 0; $("#scan-msg").textContent = msgs[0];
     const tick = setInterval(() => { $("#scan-msg").textContent = msgs[Math.min(++i, msgs.length - 1)]; }, 7000);
     try {
-      const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: tsToken("scan") }) });
+      const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: tsToken("scan"), mode: "consent" }) });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || "The scan didn't finish. Try again, or try the sample website.");
       loadScan(data);

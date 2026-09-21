@@ -449,7 +449,7 @@
     let i = 0; $("#scan-msg").textContent = MSGS[0];
     const tick = setInterval(() => $("#scan-msg").textContent = MSGS[Math.min(++i, MSGS.length - 1)], 7000);
     try {
-      const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: "" }) });
+      const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: "", mode: "gap" }) });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || "The assessment didn't finish. Try again.");
       gated = true; questionnaireStep(data);                // scan done -> ask the 6 questions -> then the report
