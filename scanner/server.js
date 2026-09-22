@@ -180,7 +180,11 @@ http.createServer(async (req, res) => {
     let payload;
     try { payload = JSON.parse((await readBody(req)) || "{}"); } catch { return send(res, 400, { error: "Invalid request." }, origin); }
     const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
-    const authed = DEV || bearerOk(req) || (originAllowed(origin) && await turnstileOk(payload.turnstileToken, ip));
+    // Browser-direct auth: allowed Origin, plus a valid Turnstile token WHEN a secret is
+    // configured. With no TURNSTILE_SECRET the bot gate is off and browser scans rely on the
+    // allowed-origin check + per-IP rate limiting (flip Turnstile on/off purely via that env var).
+    const browserOk = originAllowed(origin) && (TURNSTILE_SECRET ? await turnstileOk(payload.turnstileToken, ip) : true);
+    const authed = DEV || bearerOk(req) || browserOk;
     if (!authed) return send(res, 401, { error: "Unauthorised" }, origin);
     try {
       if (req.url === "/lead") return send(res, 200, await handleLead(payload), origin);

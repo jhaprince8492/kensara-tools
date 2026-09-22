@@ -21,21 +21,26 @@
   const navDemo = $("#nav-demo"); if (navDemo) navDemo.href = SITE.bookDemoUrl || "#";
   const priceLine = $("#pricing-line"); if (priceLine) priceLine.innerHTML = SITE.pricingUrl ? `See <a href="${esc(SITE.pricingUrl)}" target="_blank" rel="noopener">plans and pricing</a>.` : "";
 
-  /* ---------- optional Cloudflare Turnstile ---------- */
-  const widgets = {};
+  /* ---------- optional Cloudflare Turnstile (implicit render) ----------
+     We tag the placeholders with .cf-turnstile + data-sitekey and load api.js once.
+     Cloudflare auto-renders them and drops a hidden <input name="cf-turnstile-response">
+     into each container, which we read on submit. We never call turnstile.render()
+     ourselves, so a double-load or an extension pre-defining window.turnstile can't
+     crash us. tsToken/tsReset take the container id ("turnstile" or "turnstile-lead"). */
   function loadTurnstile() {
     if (!SITE.turnstileSiteKey) return;
+    document.querySelectorAll("#turnstile, #turnstile-lead").forEach(el => {
+      el.classList.add("cf-turnstile");
+      el.setAttribute("data-sitekey", SITE.turnstileSiteKey);
+    });
+    if (window.__kTsLoaded) return; window.__kTsLoaded = true;
     const s = document.createElement("script");
-    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__kTurnstile";
-    s.async = true;
-    window.__kTurnstile = () => {
-      widgets.scan = turnstile.render("#turnstile", { sitekey: SITE.turnstileSiteKey });
-      widgets.lead = turnstile.render("#turnstile-lead", { sitekey: SITE.turnstileSiteKey });
-    };
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    s.async = true; s.defer = true;
     document.head.appendChild(s);
   }
-  const tsToken = w => (SITE.turnstileSiteKey && window.turnstile && widgets[w] !== undefined) ? turnstile.getResponse(widgets[w]) : "";
-  const tsReset = w => { if (SITE.turnstileSiteKey && window.turnstile && widgets[w] !== undefined) turnstile.reset(widgets[w]); };
+  const tsToken = id => { const c = document.getElementById(id), inp = c && c.querySelector('[name="cf-turnstile-response"]'); return inp ? inp.value : ""; };
+  const tsReset = id => { if (window.turnstile) { try { turnstile.reset("#" + id); } catch (e) {} } };
   loadTurnstile();
 
   /* ---------- navigation ---------- */
@@ -59,12 +64,12 @@
     let i = 0; $("#scan-msg").textContent = msgs[0];
     const tick = setInterval(() => { $("#scan-msg").textContent = msgs[Math.min(++i, msgs.length - 1)]; }, 7000);
     try {
-      const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: tsToken("scan"), mode: "consent" }) });
+      const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: tsToken("turnstile"), mode: "consent" }) });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || "The scan didn't finish. Try again, or try the sample website.");
       loadScan(data);
     } catch (err) { $("#scan-err").textContent = err.message; }
-    finally { clearInterval(tick); $("#scan-btn").disabled = false; $("#scanning").hidden = true; tsReset("scan"); }
+    finally { clearInterval(tick); $("#scan-btn").disabled = false; $("#scanning").hidden = true; tsReset("turnstile"); }
   });
   $("#sample").onclick = async () => { const r = await fetch(BASE + "sample-scan.json"); loadScan(await r.json()); };
 
@@ -254,7 +259,7 @@
       // Only scan statistics go with the lead, never the grievance officer or other details typed into the generator.
       scanSummary: s && !s.sample ? { domain: s.domain, highFindings: f.filter(x => x.level === "high").length, mediumFindings: f.filter(x => x.level === "medium").length,
         cookies: state.cookies.length, trackers: state.hosts.filter(h => h.category === "analytics" || h.category === "marketing").length } : null,
-      turnstileToken: tsToken("lead")
+      turnstileToken: tsToken("turnstile-lead")
     };
     $("#lead-send").disabled = true; $("#lead-err").textContent = "";
     try {
@@ -264,6 +269,6 @@
       $("#lead-body").hidden = true; $("#lead-done").hidden = false; LF.reset();
     } catch (err) {
       $("#lead-err").textContent = err.message + (SITE.contactEmail ? ` (${SITE.contactEmail})` : "");
-    } finally { $("#lead-send").disabled = false; tsReset("lead"); }
+    } finally { $("#lead-send").disabled = false; tsReset("turnstile-lead"); }
   });
 })();

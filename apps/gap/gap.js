@@ -7,20 +7,25 @@
   const REGION_FLAG = { US: "🇺🇸", EU: "🇪🇺", IN: "🇮🇳", Global: "🌐" };
   const DEADLINE = new Date("2027-05-13T00:00:00Z");
 
-  /* ---------- optional Cloudflare Turnstile (bot gate for browser-direct scans) ---------- */
-  const widgets = {};
+  /* ---------- optional Cloudflare Turnstile (implicit render) ----------
+     Tag the placeholder with .cf-turnstile + data-sitekey and load api.js once; Cloudflare
+     auto-renders it and drops a hidden <input name="cf-turnstile-response"> we read on submit.
+     We never call turnstile.render(), so a double-load or an extension that pre-defines
+     window.turnstile can't crash us. tsToken/tsReset take the container id ("turnstile"). */
   function loadTurnstile() {
     if (!SITE.turnstileSiteKey) return;
+    document.querySelectorAll("#turnstile").forEach(el => {
+      el.classList.add("cf-turnstile");
+      el.setAttribute("data-sitekey", SITE.turnstileSiteKey);
+    });
+    if (window.__kTsLoaded) return; window.__kTsLoaded = true;
     const s = document.createElement("script");
-    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__kTurnstile";
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
     s.async = true; s.defer = true;
-    window.__kTurnstile = () => {
-      if (document.querySelector("#turnstile") && window.turnstile) widgets.scan = turnstile.render("#turnstile", { sitekey: SITE.turnstileSiteKey });
-    };
     document.head.appendChild(s);
   }
-  const tsToken = w => (SITE.turnstileSiteKey && window.turnstile && widgets[w] !== undefined) ? turnstile.getResponse(widgets[w]) : "";
-  const tsReset = w => { if (SITE.turnstileSiteKey && window.turnstile && widgets[w] !== undefined) turnstile.reset(widgets[w]); };
+  const tsToken = id => { const c = document.getElementById(id), inp = c && c.querySelector('[name="cf-turnstile-response"]'); return inp ? inp.value : ""; };
+  const tsReset = id => { if (window.turnstile) { try { turnstile.reset("#" + id); } catch (e) {} } };
   loadTurnstile();
 
   /* ---------- inline icons (24 viewBox, stroke) ---------- */
@@ -465,12 +470,12 @@
     let i = 0; $("#scan-msg").textContent = MSGS[0];
     const tick = setInterval(() => $("#scan-msg").textContent = MSGS[Math.min(++i, MSGS.length - 1)], 7000);
     try {
-      const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: tsToken("scan"), mode: "gap" }) });
+      const r = await fetch(API + "/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, turnstileToken: tsToken("turnstile"), mode: "gap" }) });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || "The assessment didn't finish. Try again.");
       gated = true; questionnaireStep(data);                // scan done -> ask the 6 questions -> then the report
     } catch (err) { $("#scan-err").textContent = err.message; }
-    finally { clearInterval(tick); tsReset("scan"); $("#scan-btn").disabled = false; $("#scanning").hidden = true; }
+    finally { clearInterval(tick); tsReset("turnstile"); $("#scan-btn").disabled = false; $("#scanning").hidden = true; }
   });
   // Sample skips the questions and shows a fully-built example report (scan + typical answers).
   $("#sample").onclick = () => { gated = true; renderReport(buildModel(window.__SAMPLE__, window.__SAMPLE_ANSWERS__ || null)); };
