@@ -8,10 +8,10 @@
   const DEFAULTS = window.KensaraConsent.defaults("en");
   const blank = () => ({ scan: null, cookies: [], storage: [], hosts: [], leadContext: "" });
   let state = blank();
-  const BASE = (function () {
-    var p = location.pathname;
-    return p.endsWith("/") ? p : p.slice(0, p.lastIndexOf("/") + 1);
-  })();
+  // The consent tool is always served under /consent/ (directly on the box and
+  // when proxied at kensara.in/consent), so anchor relative assets there. Hardcoding
+  // this keeps sample-scan.json / demo-site.html working even without a trailing slash.
+  const BASE = "/consent/";
   // Deep scanner API. Empty = same origin (served by the scanner service). Set
   // SITE.scannerBase to a full URL (e.g. https://consent.kensara.in) for cross-origin.
   const API = String(SITE.scannerBase || "").replace(/\/$/, "");
