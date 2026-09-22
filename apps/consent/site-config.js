@@ -7,5 +7,5 @@ window.KENSARA_SITE = {
   privacyNoticeUrl: "https://kensara.in/privacy",   // Kensara's OWN privacy notice (covers the lead form and scans)
   contactEmail: "contact@kensara.in",
   pricingUrl: "https://kensara.in/pricing",
-  turnstileSiteKey: "0x4AAAAAAE_K0NXlEPS4MHqw"       // Cloudflare Turnstile site key (public). Empty = no bot check.
+  turnstileSiteKey: ""                               // Cloudflare Turnstile site key (public). Empty = bot gate off (matches TURNSTILE_SECRET unset on the box). To re-enable: set this + TURNSTILE_SECRET, then rebuild.
 };
